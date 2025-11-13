@@ -2,6 +2,7 @@ from flask import g
 from app import db_pool
 import random
 from psycopg2 import extras
+import os
 
 class Request:
    
@@ -194,7 +195,62 @@ class Request:
         finally:
             cur.close()
             db_pool.putconn(conn)
-   
+            
+    @staticmethod
+    def get_uploaded_files(request_id):
+        """
+        Fetch previously uploaded requirement files for a given request.
+        Returns a dict: {requirement_id: file_path}
+        """
+        conn = db_pool.getconn()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT requirement_id, file_path
+                FROM request_requirements_links
+                WHERE request_id = %s
+            """, (request_id,))
+            rows = cur.fetchall()
+            return {row[0]: row[1] for row in rows}
+        finally:
+            cur.close()
+            db_pool.putconn(conn)
+            
+            
+    @staticmethod
+    def delete_requirement_file(request_id, requirement_id):
+        """
+        Delete a requirement file from disk and DB.
+        """
+        conn = db_pool.getconn()
+        cur = conn.cursor()
+        try:
+            # Get file path
+            cur.execute("""
+                SELECT file_path FROM request_requirements_links
+                WHERE request_id = %s AND requirement_id = %s
+            """, (request_id, requirement_id))
+            row = cur.fetchone()
+            if row:
+                file_path = row[0]
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+
+                # Delete from DB
+                cur.execute("""
+                    DELETE FROM request_requirements_links
+                    WHERE request_id = %s AND requirement_id = %s
+                """, (request_id, requirement_id))
+                conn.commit()
+            return True, "File deleted"
+        except Exception as e:
+            conn.rollback()
+            print(f"Error deleting file: {e}")
+            return False, "Error deleting file"
+        finally:
+            cur.close()
+            db_pool.putconn(conn)
+            
    #fetch requirements needed by request id
     @staticmethod
     def get_requirements_by_request_id(request_id):
@@ -333,7 +389,7 @@ class Request:
         try:
             cur.execute("""
                 UPDATE requests
-                SET status = 'submitted', completed_at = NOW(), total_cost = %s
+                SET status = 'SUBMITTED', completed_at = NOW(), total_cost = %s
                 WHERE request_id = %s
             """, (total_cost, request_id))
             conn.commit()
