@@ -128,7 +128,7 @@ const handleSubmit = async () => {
 
   return (
     <div className="overlay">
-      <div className="Popup">
+      <div className="popup">
         <h3 className="title">{isEditMode ? "Edit Document" : "Add Document"}</h3>
 
         <div className="name-and-description-wrapper">

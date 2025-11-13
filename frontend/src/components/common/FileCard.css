@@ -20,6 +20,14 @@
     transition: all 0.3s ease;
 }
 
+.file-card{
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 32px 24px 24px 24px;
+  gap: 16px;
+}
 
 .file-card:hover, .add-card:hover{
     transform: scale(1.05);
@@ -33,21 +41,17 @@
 .file-card:hover .action-section {
   opacity: 1;
 }
+
+.file-card.selected {
+    transform: scale(1.05);
+    background-color: #E1E1FE;
+}
+
 .add-card {
     display: flex;
     justify-content: center;
     align-items: center;
 }
-
-.file-card{
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  align-items: center;
-  padding: 20px;
-  gap: 16px;
-}
-
 .name-and-description-section {
     display: flex;
     flex-direction: column;
@@ -57,7 +61,7 @@
 }
 
 .document-name {
-    width: 90%;
+    width: 80%;
     font-family: var(--font-family-base);
     color: var(--color-black);
     margin: 0;
@@ -129,3 +133,4 @@
 .delete-button:hover{
     background-color: var(--color-button-destructive-hover);
 }
+

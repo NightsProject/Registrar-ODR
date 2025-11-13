@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
-import "./PreferredContact.css";
+import "./Request.css"
 import { getCSRFToken } from "../../../utils/csrf";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import ContentBox from "../../../components/user/ContentBox";
+import ButtonLink from "../../../components/common/ButtonLink";
 
 function PreferredContact({ preferredContactInfo = {}, setPreferredContactInfo, contactInfo, setContactInfo, onNext, onBack }) {
   /*
@@ -14,6 +17,8 @@ function PreferredContact({ preferredContactInfo = {}, setPreferredContactInfo, 
   */
 
   const [selectedMethod, setSelectedMethod] = useState(preferredContactInfo.method || "");
+  const [loadingContact, setLoadingContact] = useState(true);
+  const [savingContact, setSavingContact] = useState(false);
 
   // Fetch contact info on component mount
   useEffect(() => {
@@ -31,9 +36,11 @@ function PreferredContact({ preferredContactInfo = {}, setPreferredContactInfo, 
         } else {
           console.error("Failed to fetch contact info:", data.notification);
         }
+        setLoadingContact(false);
       })
       .catch((error) => {
         console.error("Error fetching contact info:", error);
+        setLoadingContact(false);
       });
   }, [setContactInfo]);
 
@@ -51,7 +58,8 @@ function PreferredContact({ preferredContactInfo = {}, setPreferredContactInfo, 
       alert("Please select a preferred contact method.");
       return;
     }
-  // Send the selected method to the backend
+    setSavingContact(true);
+    // Send the selected method to the backend
     fetch("/api/set-preferred-contact", {
       method: "POST",
       headers: {
@@ -68,77 +76,96 @@ function PreferredContact({ preferredContactInfo = {}, setPreferredContactInfo, 
         } else {
           alert(`Error: ${data.notification}`);
         }
+        setSavingContact(false);
       })
       .catch((error) => {
         console.error("Error setting preferred contact:", error);
         alert("An error occurred while setting the preferred contact method.");
+        setSavingContact(false);
       });
   };
 
   return (
-    <div className="preferred-contact-page">
-      <h2>Preferred Contact</h2>
+    <>
+      {(loadingContact || savingContact) && (
+        <LoadingSpinner message={loadingContact ? "Loading contact info..." : "Saving contact preference..."} />
+      )}
 
-      <form>
-        <div className="radio-group">
-          <label className="radio-label">
-            <input
-              type="radio"
-              name="contactMethod"
-              value="Email"
-              checked={selectedMethod === "Email"}
-              onChange={() => setSelectedMethod("Email")}
-            />
-            Email <em className="contact-detail">{contactInfo.email || "test@gmail.com"}</em>
-          </label>
-        </div>
+      <ContentBox className="preferred-contact-box">
+        <h2>Preferred Contact</h2>
 
-        <div className="radio-group">
-          <label className="radio-label">
-            <input
-              type="radio"
-              name="contactMethod"
-              value="SMS"
-              checked={selectedMethod === "SMS"}
-              onChange={() => setSelectedMethod("SMS")}
-            />
-            SMS <em className="contact-detail">{contactInfo.contact_number || "09123456789"}</em>
-          </label>
-        </div>
+        <form>
+          <div className="radio-group">
+            <label className="radio-label">
+              <input
+                type="radio"
+                name="contactMethod"
+                value="Email"
+                checked={selectedMethod === "Email"}
+                onChange={() => setSelectedMethod("Email")}
+                disabled={loadingContact || savingContact}
+              />
+              Email <em className="contact-detail">{contactInfo.email || "test@gmail.com"}</em>
+            </label>
+          </div>
 
-        <div className="contact-row">
-          <label className="radio-label">
-            <input
-              type="radio"
-              name="contactMethod"
-              value="WhatsApp"
-              checked={selectedMethod === "WhatsApp"}
-              onChange={() => setSelectedMethod("WhatsApp")}
-            />
-            WhatsApp
-          </label>
-          <label className="radio-label">
-            <input
-              type="radio"
-              name="contactMethod"
-              value="Telegram"
-              checked={selectedMethod === "Telegram"}
-              onChange={() => setSelectedMethod("Telegram")}
-            />
-            Telegram
-          </label>
-        </div>
-      </form>
+          <div className="radio-group">
+            <label className="radio-label">
+              <input
+                type="radio"
+                name="contactMethod"
+                value="SMS"
+                checked={selectedMethod === "SMS"}
+                onChange={() => setSelectedMethod("SMS")}
+                disabled={loadingContact || savingContact}
+              />
+              SMS <em className="contact-detail">{contactInfo.contact_number || "09123456789"}</em>
+            </label>
+          </div>
 
-      <div className="button-row">
-        <button type="button" className="back-btn" onClick={onBack}>
-          Back
-        </button>
-        <button type="button" className="next-btn" onClick={handleNextClick} disabled={!canProceed}>
-          Next
-        </button>
+          <div className="contact-row">
+            <label className="radio-label">
+              <input
+                type="radio"
+                name="contactMethod"
+                value="WhatsApp"
+                checked={selectedMethod === "WhatsApp"}
+                onChange={() => setSelectedMethod("WhatsApp")}
+                disabled={loadingContact || savingContact}
+              />
+              WhatsApp
+            </label>
+            <label className="radio-label">
+              <input
+                type="radio"
+                name="contactMethod"
+                value="Telegram"
+                checked={selectedMethod === "Telegram"}
+                onChange={() => setSelectedMethod("Telegram")}
+                disabled={loadingContact || savingContact}
+              />
+              Telegram
+            </label>
+          </div>
+        </form>
+
+       <div className="action-buttons">
+        <ButtonLink
+          placeholder="Back"
+          onClick={onBack}
+          variant="secondary"
+          disabled={loadingContact || savingContact}
+        />
+        <ButtonLink
+          placeholder={savingContact ? "Saving..." : "Next"}
+          onClick={handleNextClick}
+          variant="primary"
+          disabled={!canProceed || loadingContact || savingContact}
+        />
       </div>
-    </div>
+
+      </ContentBox>
+    </>
   );
 }
 

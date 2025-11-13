@@ -90,27 +90,28 @@ Note: Replace "odr_system" with your preferred database Name
 In the project root directory, create a new file named **`.env`** and add the following environment variables:
 
 ```bash
-# ===============================
-# 🌐 Flask Application Settings
-# ===============================
+REACT_APP_GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+
+
 FLASK_APP=run.py
 FLASK_ENV=development
 FLASK_RUN_HOST=0.0.0.0
 FLASK_RUN_PORT=8000
 
-# ===============================
-# 🔒 Security
-# ===============================
-SECRET_KEY="YOUR_SECRET_KEY_HERE"
 
-# ===============================
-# 🗄️ PostgreSQL Database Settings
-# ===============================
-DB_NAME="YOUR_DATABASE_NAME"
-DB_USERNAME="YOUR_DATABASE_USERNAME"
-DB_PASSWORD="YOUR_DATABASE_PASSWORD"
-DB_HOST="localhost"
-DB_PORT="5432"
+SECRET_KEY="YOUR_SECRET_KEY_HERE"
+JWT_SECRET_KEY="YOUR_JWT_SECRET_KEY_HERE"
+
+
+DB_NAME=""
+DB_USERNAME=""
+DB_PASSWORD=""
+DB_HOST=""
+DB_PORT=""
+
+
 ```
 
 ### 4️⃣ Run the Application

@@ -1,41 +1,73 @@
-import React from "react";
-import "./SubmitRequest.css";
+import React, { useState } from "react";
+import "./Request.css";
+import ContentBox from "../../../components/user/ContentBox";
+import ButtonLink from "../../../components/common/ButtonLink";
+import { getCSRFToken } from "../../../utils/csrf";
 
-function SubmitRequest({ selectedDocs, uploadedFiles, preferredContactInfo, contactInfo, trackingId, onBack }) {
-  /**
-   * Props:
-   * - selectedDocs: array of selected documents
-   * - uploadedFiles: object { req_id: File }
-   * - preferredContactInfo: object with contact info
-   * - contactInfo: object with email and contact_number
-   * - trackingId: string, the tracking ID from the complete request
-   * - onBack: function handler for Back button
-   */
+function SubmitRequest({ trackingId }) {
+  const [loading, setLoading] = useState(false);
 
-    return (
-      <div className="submit-request-container" aria-live="polite">
-        <h2 className="submit-title">
-          Your request have been submitted
-        </h2>
+  // Logs out (clears JWT + session) and redirects
+  const handleLogoutAndRedirect = async (redirectPath) => {
+    setLoading(true);
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "X-CSRF-TOKEN": getCSRFToken(),
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      // Clear any local or session storage (if used)
+      localStorage.removeItem("jwtToken");
+      sessionStorage.clear();
 
-        <p className="submit-message">
-          Please check your preferred contact method for the confirmation message and tracking details.
-          keep this number safe as you will need it to track the status of your request.
-        </p>
+      // Redirect smoothly after logout
+      setTimeout(() => {
+        window.location.href = redirectPath;
+      }, 400);
+    }
+  };
 
-        <div className="tracking-id-label">Tracking ID:</div>
-        <div className="tracking-id">{trackingId}</div>
-
-        <div className="button-row">
-          <button className="return-btn" onClick={() => window.location.href = "/user/Landing"}>
-            Return to Home
-          </button>
-          <button className="track-btn" onClick={() => window.location.href = "/user/Track"}>
-            Track
-          </button>
+  return (
+    <div className="upload-requirements-page">
+      <ContentBox className="submit-request-box">
+        <div className="text-section">
+          <h2 className="title">Your request has been submitted</h2>
+          <p className="subtext">
+            Your chosen contact will receive the confirmation and tracking details.
+            <br />
+            Keep this tracking number for future reference.
+          </p>
         </div>
-      </div>
-    );
+
+        <div className="tracking-id-section">
+          <div className="tracking-id-label">Tracking ID:</div>
+          <div className="tracking-id">{trackingId}</div>
+        </div>
+
+        <div className="action-buttons">
+          <ButtonLink
+            placeholder={loading ? "Please wait..." : "Return to Home"}
+            onClick={() => handleLogoutAndRedirect("/user/Landing")}
+            variant="secondary"
+            disabled={loading}
+          />
+          <ButtonLink
+            placeholder={loading ? "Please wait..." : "Track Request"}
+            onClick={() => handleLogoutAndRedirect("/user/Track")}
+            variant="primary"
+            disabled={loading}
+          />
+        </div>
+      </ContentBox>
+    </div>
+  );
 }
 
 export default SubmitRequest;

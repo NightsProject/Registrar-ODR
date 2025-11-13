@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Tracking.css";
 import ButtonLink from "../../../components/common/ButtonLink";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 
 // request details
@@ -35,6 +36,7 @@ function Details({ trackData, onTrackAnoter, onBack }) {
 
     return (
         <div className="text-section">
+            {loading && <LoadingSpinner message="Loading documents..." />}
             <h3 className="status-title">My Request</h3>
             <div className="status-body">
                 <div className="documents-list">
@@ -63,8 +65,8 @@ function Details({ trackData, onTrackAnoter, onBack }) {
 
                 <div className="action-section">
                     <div className="button-section">
-                        <ButtonLink onClick={onTrackAnoter} placeholder="Track Another" variant="secondary" />
-                        <ButtonLink onClick={onBack} placeholder="Back to Status" variant="primary" />
+                        <ButtonLink onClick={onTrackAnoter} placeholder="Track Another" variant="secondary" disabled={loading} />
+                        <ButtonLink onClick={onBack} placeholder="Back to Status" variant="primary" disabled={loading} />
                     </div>
                 </div>
                 <div className="support-section">

@@ -57,8 +57,9 @@
   width: 100%;
 }
 
-.subtext{
+.cards-wrapper .subtext{
   margin: 0px;
+  height: 100%;
 }
 .announcement-container { 
   display: flex;

@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import "./Tracking.css";
 import ButtonLink from "../../../components/common/ButtonLink";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 function EnterTrackId({ onNext }) {
     const [trackingNumber, setTrackingNumber] = useState("");
     const [studentId, setStudentId] = useState("");
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleStudentIdChange = (e) => {
         let value = e.target.value.replace(/[^0-9]/g, "");
@@ -20,14 +22,15 @@ function EnterTrackId({ onNext }) {
             return;
         }
 
+        setLoading(true);
         try {
-            const payload = { 
-                tracking_number: trackingNumber, 
-                student_id: studentId 
+            const payload = {
+                tracking_number: trackingNumber,
+                student_id: studentId
             };
-            
-            console.log("Sending payload:", payload); 
-            
+
+            console.log("Sending payload:", payload);
+
             const response = await fetch('/api/track', {
                 method: 'POST',
                 headers: {
@@ -60,6 +63,8 @@ function EnterTrackId({ onNext }) {
             console.error("Error stack:", err.stack);
             triggerError("An error occurred. Please try again.");
             console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -77,6 +82,7 @@ function EnterTrackId({ onNext }) {
 
     return (
         <div className="Track-page">
+            {loading && <LoadingSpinner message="Tracking request..." />}
             <div className="text-section">
                 <h3 className="title">Track your request</h3>
                 <p className="subtext">Only verified students can access request status. Make sure you have your registered number ready.</p>
@@ -92,6 +98,7 @@ function EnterTrackId({ onNext }) {
                             placeholder="e.g., DOC-2021-2134"
                             value={trackingNumber}
                             onChange={(e) => setTrackingNumber(e.target.value)}
+                            disabled={loading}
                         />
                     </div>
                     <div className="input-wrapper">
@@ -103,6 +110,7 @@ function EnterTrackId({ onNext }) {
                             value={studentId}
                             onChange={handleStudentIdChange}
                             maxLength={9}
+                            disabled={loading}
                         />
                     </div>
                 </div>
@@ -113,8 +121,8 @@ function EnterTrackId({ onNext }) {
 
             <div className="action-section">
                 <div className="button-section">
-                    <ButtonLink to={"/user/landing"} placeholder="Return" className="cancel-button" variant="secondary" />
-                    <ButtonLink onClick={handleSubmit} placeholder="Track" className="proceed-button" variant="primary" />
+                    <ButtonLink to={"/user/landing"} placeholder="Return" className="cancel-button" variant="secondary" disabled={loading} />
+                    <ButtonLink onClick={handleSubmit} placeholder={loading ? "Tracking..." : "Track"} className="proceed-button" variant="primary" disabled={loading} />
                 </div>
 
                 <div className="support-section">

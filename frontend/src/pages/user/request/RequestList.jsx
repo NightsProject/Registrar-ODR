@@ -1,6 +1,10 @@
 import React, { useState } from "react";
-import "./RequestList.css";
+import "./Request.css";
 import { getCSRFToken } from "../../../utils/csrf";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import ContentBox from "../../../components/user/ContentBox";
+import ButtonLink from "../../../components/common/ButtonLink";
+
 
 function RequestList({ selectedDocs = [], onBack, onProceed}) {
   const initialQuantities = selectedDocs.reduce((acc, doc) => {
@@ -76,66 +80,79 @@ function RequestList({ selectedDocs = [], onBack, onProceed}) {
   };
 
   return (
-    <div className="request-list-page">
-      <h2>My Requests</h2>
+    <>
+      {loading && <LoadingSpinner message="Saving documents..." />}
 
-      {selectedDocs.length === 0 ? (
-        <p>No documents selected. Please go back and select documents.</p>
-      ) : (
-        selectedDocs.map((doc) => (
-          <div key={doc.doc_id} className="document-requirements-card">
-            <h3>{doc.doc_name}</h3>
+      <ContentBox className="request-list">
+        <div className="title-container">
+          <h3 className="title">My Requests</h3>
+          <hr />
+        </div>
 
-            <div className="quantity-controls">
-              <button
-                className="qty-btn"
-                onClick={() => decreaseQuantity(doc.doc_id)}
-                disabled={loading}
-              >
-                -
-              </button>
-              <span className="quantity-number">{quantities[doc.doc_id]}</span>
-              <button
-                className="qty-btn"
-                onClick={() => increaseQuantity(doc.doc_id)}
-                disabled={loading}
-              >
-                +
-              </button>
-            </div>
+        <div className="request-item-container">
+        {selectedDocs.length === 0 ? (
+          <p>No documents selected. Please go back and select documents.</p>
+        ) : (
+          selectedDocs.map((doc) => (
+            <div key={doc.doc_id} className="document-item">
+              <div className="title-and-action-section">
+                <h3 className="document-name">{doc.doc_name}</h3>
 
-            <div className="requirements-header">
-              <span className="requirements-label">Requirements</span>
+                <div className="quantity-controls">
+                  <button
+                    className="qty-btn"
+                    onClick={() => decreaseQuantity(doc.doc_id)}
+                    disabled={loading}
+                  >
+                    -
+                  </button>
+                  <span className="quantity-number">{quantities[doc.doc_id]}</span>
+                  <button
+                    className="qty-btn"
+                    onClick={() => increaseQuantity(doc.doc_id)}
+                    disabled={loading}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div className="requirements-header">
+                <span className="requirements-label">Requirements</span>
+                <hr />
+              </div>
+
+              {doc.requirements && doc.requirements.length > 0 ? (
+                <ul className="requirements-list">
+                  {doc.requirements.map((req, idx) => (
+                    <li key={idx}>{req}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No requirements listed for this document.</p>
+              )}
               <hr />
             </div>
+          ))
+        )}
+        </div>
+        <div className="action-section">
+          <ButtonLink
+            placeholder="Back"
+            onClick={onBack}
+            variant="secondary"
+            disabled={loading}
+          />
+          <ButtonLink
+            placeholder={loading ? "Saving..." : "Proceed"}
+            onClick={handleProceed}
+            variant="primary"
+            disabled={loading}
+          />
+        </div>
 
-            {doc.requirements && doc.requirements.length > 0 ? (
-              <ul className="requirements-list">
-                {doc.requirements.map((req, idx) => (
-                  <li key={idx}>{req}</li>
-                ))}
-              </ul>
-            ) : (
-              <p>No requirements listed for this document.</p>
-            )}
-            <hr />
-          </div>
-        ))
-      )}
-
-      <div className="button-row">
-        <button className="back-btn" onClick={onBack} disabled={loading}>
-          Back
-        </button>
-        <button
-          className="proceed-btn"
-          onClick={handleProceed}
-          disabled={loading}
-        >
-          {loading ? "Saving..." : "Proceed"}
-        </button>
-      </div>
-    </div>
+       
+      </ContentBox>
+    </>
   );
 }
 

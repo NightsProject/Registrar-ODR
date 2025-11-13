@@ -1,0 +1,66 @@
+.popup {
+  max-width: 900px;
+  width: 90%;
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+.section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.25rem;
+}
+
+.two-columns {
+  display: flex;
+  gap: 2rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.upload-status.uploaded {
+  color: green;
+  font-weight: bold;
+}
+
+.upload-status.not-uploaded {
+  color: red;
+  font-weight: bold;
+}
+
+.action-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.close-button {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  background-color: #2563eb;
+}

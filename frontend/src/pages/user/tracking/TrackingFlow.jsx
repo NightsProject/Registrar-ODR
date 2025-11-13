@@ -8,6 +8,7 @@ import PaymentInstructions from "./PaymentInstructions";
 import PaymentSuccess from "./PaymentSuccess";
 import DeliveryInstructions from "./DeliveryInstructions";
 import ContentBox from "../../../components/user/ContentBox";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import "./Tracking.css";
 
 function TrackFlow() {
@@ -15,6 +16,7 @@ function TrackFlow() {
     const [trackData, setTrackData] = useState(null);
     const [maskedPhone, setMaskedPhone] = useState("");
     const [studentId, setStudentId] = useState("");
+    const [loading, setLoading] = useState(false);
 
     // the 'data' parameter will hold the response from the tracking API
     const handleTrackIdSubmit = (data) => {
@@ -23,6 +25,7 @@ function TrackFlow() {
         setMaskedPhone(data.maskedPhone);
         setStudentId(data.studentId);
 		setCurrentView("otp");
+        setLoading(false);
     };
 
     const handleBack = () => {
@@ -42,6 +45,7 @@ function TrackFlow() {
 	const handleViewPaymentInstructions = () => setCurrentView("payment-instructions");	
 	const handleOtpSuccess = (data) => {
 		setCurrentView("status");
+        setLoading(false);
 	};
 	const handleViewDeliveryInstructions = () => setCurrentView("delivery-instructions");
 
@@ -55,6 +59,7 @@ function TrackFlow() {
 	};
 	
 	const handlePaymentComplete = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/track/payment-complete', {
                 method: 'POST',
@@ -80,11 +85,14 @@ function TrackFlow() {
         } catch (error) {
             console.error("Payment completion error:", error);
             // Optionally, show an error message to the user
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div className="Track-page">
+            {loading && <LoadingSpinner message="Processing..." />}
             {currentView === "otp" ? (
                 <OtpVerification
                     onNext={handleOtpSuccess}

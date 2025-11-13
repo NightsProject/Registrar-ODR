@@ -12,7 +12,7 @@
     z-index: 999;
 }
 
-.Popup {
+.popup {
     /* Auto layout */
     display: flex;
     flex-direction: column;
@@ -32,7 +32,7 @@
     z-index: 1000;
 }
 
-.Popup h3 {
+.popup h3 {
   color: var(--color-black);
   font-size: var(--font-size-title);
   font-weight: bold;
@@ -151,6 +151,13 @@ hr{
     height: 8px;
     width: 100%;
 }
+
+.popup .action-section{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
 .cancel-button-wrapper,
 .proceed-button-wrapper {
   width: 76.47px;

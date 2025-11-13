@@ -115,6 +115,7 @@ function Documents() {
             onEdit={handleEdit}
             onDelete={handleOpenDelete}
             onClick={() => console.log("Clicked", doc.doc_id)}
+            isAdmin={true}
           />
         ))}
       </div>

@@ -2,12 +2,14 @@ import { useState, useEffect} from "react";
 import "./Login.css";
 import ButtonLink from "../../../components/common/ButtonLink";
 import ContentBox from "../../../components/user/ContentBox";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 
 function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
     const [studentId, setStudentId] = useState("");
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleInputChange = (e) => {
     let value = e.target.value;
@@ -41,11 +43,17 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
     const handleSubmit = async () => {
         if (studentId.length === 0) {
             triggerError("Please fill in the Student ID.");
+            return;
         } else if (studentId.length < 9) {
             triggerError("Please enter a valid Student ID.");
             return;
         }
 
+        // Clear existing cookies to ensure no stale sessions or JWT tokens
+        document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "access_token_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+        setLoading(true);
         try {
             const response = await fetch("/user/check-id", {
                 method: "POST",
@@ -59,11 +67,13 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
 
             if (response.status === 404) {
                 triggerError(data.message);
+                setLoading(false);
                 return;
             }
 
           if (data.status === "has_liability") {
               onNext("liability");
+              setLoading(false);
               return;
           }
 
@@ -73,6 +83,8 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
         } catch (error) {
             triggerError("An error occurred. Please try again.");
             console.error(error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -90,54 +102,60 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
     
 
     return (
-        <div className="Login-page">
-            <ContentBox>
-                <div className="text-section">
-                    <h3 className="title">Enter Student ID</h3>
-                </div>
-
-                <div className="input-section">
-                    <p className="subtext">ID Number</p>
-                    <div className="input-wrapper">
-                    <input 
-                        id="student-id" 
-                        type="text"
-                        className={`box-input ${error ? "input-error" : ""} ${shake ? "shake" : ""}`}
-                        placeholder="0000-0000" 
-                        value={studentId}
-                        onChange={handleInputChange}
-                        maxLength={9}
-                    />
+        <>
+            {loading && <LoadingSpinner message="Verifying student ID..." />}
+            <div className="Login-page">
+                <ContentBox>
+                    <div className="text-section">
+                        <h3 className="title">Enter Student ID</h3>
                     </div>
-                    <div className="error-section">
-                    {error && <p className={`error-text ${shake ? "shake" : ""}`}>{error}</p>}
-                    </div>
-                </div>
 
-                <div className="action-section">
-                   <div className="button-section">
-                        <ButtonLink 
-                        to={"/user/landing"}
-                        placeholder="Return"
-                        className="cancel-button"
-                        variant="secondary"
+                    <div className="input-section">
+                        <p className="subtext">ID Number</p>
+                        <div className="input-wrapper">
+                        <input
+                            id="student-id"
+                            type="text"
+                            className={`box-input ${error ? "input-error" : ""} ${shake ? "shake" : ""}`}
+                            placeholder="0000-0000"
+                            value={studentId}
+                            onChange={handleInputChange}
+                            maxLength={9}
+                            disabled={loading}
                         />
-
-                        <ButtonLink 
-                        onClick={handleSubmit}
-                        placeholder="Proceed"
-                        className="proceed-button"
-                        variant="primary"
-                        />
+                        </div>
+                        <div className="error-section">
+                        {error && <p className={`error-text ${shake ? "shake" : ""}`}>{error}</p>}
+                        </div>
                     </div>
 
-                    <div className="support-section">
-                        <p className="subtext">Forgot ID Number? Contact the </p>
-                        <a href="mailto:support@example.com" className="forgot-id-link">support.</a>
-                    </div>
-                    </div>
-            </ContentBox>
-        </div>
+                    <div className="action-section">
+                       <div className="button-section">
+                            <ButtonLink
+                            to={"/user/landing"}
+                            placeholder="Return"
+                            className="cancel-button"
+                            variant="secondary"
+                            disabled={loading}
+                            />
+
+                            <ButtonLink
+                            onClick={handleSubmit}
+                            placeholder={loading ? "Verifying..." : "Proceed"}
+                            className="proceed-button"
+                            variant="primary"
+                            disabled={loading}
+                            />
+                        </div>
+
+                        <div className="support-section">
+                            <p className="subtext">Forgot ID Number? Contact the </p>
+                            <a href="mailto:support@example.com" className="forgot-id-link">support.</a>
+                        </div>
+                        </div>
+                </ContentBox>
+            </div>
+        </>
     );
 }
 
