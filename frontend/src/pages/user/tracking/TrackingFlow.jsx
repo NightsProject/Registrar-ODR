@@ -51,6 +51,11 @@ function TrackFlow() {
 	const handleViewDeliveryInstructions = () => setCurrentView("delivery-instructions");
 	const handlePickup = () => setCurrentView("pickup");
 
+	const handleOrderTypeConfirmed = () => {
+		// Optionally update trackData or navigate
+		setCurrentView("status");
+	};
+
 	const handleSelectPaymentMethod = (method) => {
 		if (method === "online") {
 			// simulate successful online payment
@@ -140,11 +145,11 @@ function TrackFlow() {
                     )}
 
                     {currentView === "delivery-instructions" && (
-                        <DeliveryInstructions onBack={handleBack} />
+                        <DeliveryInstructions onBack={handleBack} onConfirm={handleOrderTypeConfirmed} />
                     )}
 
                     {currentView === "pickup" && (
-                        <PickupInstructions onBack={handleBack} />
+                        <PickupInstructions onBack={handleBack} onConfirm={handleOrderTypeConfirmed} />
                     )}
                 </ContentBox>
             )}

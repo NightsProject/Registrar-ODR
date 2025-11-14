@@ -139,7 +139,8 @@ def ready_requests_table():
        total_cost NUMERIC(10,2) DEFAULT 0.00,
        requested_at TIMESTAMP DEFAULT NOW(),
        completed_at TIMESTAMP NULL,
-       remarks VARCHAR(255)
+       remarks VARCHAR(255),
+       order_type VARCHAR(20)
    )
    """
    execute_query(query)
