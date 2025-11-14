@@ -3,7 +3,7 @@ import ButtonLink from "../../../components/common/ButtonLink";
 import ContentBox from "../../../components/user/ContentBox";
 
 /* track status component */
-function TrackStatus({ trackData, onBack, onViewDetails, onViewDeliveryInstructions, onViewPaymentOptions }) {
+function TrackStatus({ trackData, onBack, onViewDetails, onViewDeliveryInstructions, onViewPaymentOptions, onPickup }) {
 
     // config for each status
     const statusConfig = {
@@ -17,7 +17,7 @@ function TrackStatus({ trackData, onBack, onViewDetails, onViewDeliveryInstructi
             ),
             options: (
                 <div className="claim-options">
-                    <ButtonLink to="/user/delivery" placeholder="Pick up at Registrar" className="claim-button pickup-button" />
+                    <ButtonLink onClick={onPickup} placeholder="Pick up at Registrar" className="claim-button pickup-button" />
                     <ButtonLink onClick={onViewDeliveryInstructions} placeholder="Delivery" className="claim-button delivery-button" />
                 </div>
             )

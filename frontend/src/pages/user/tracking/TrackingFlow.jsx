@@ -7,6 +7,7 @@ import PaymentOptions from "./PaymentOptions";
 import PaymentInstructions from "./PaymentInstructions";
 import PaymentSuccess from "./PaymentSuccess";
 import DeliveryInstructions from "./DeliveryInstructions";
+import PickupInstructions from "./PickupInstructions";
 import ContentBox from "../../../components/user/ContentBox";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import "./Tracking.css";
@@ -34,7 +35,7 @@ function TrackFlow() {
 			setTrackData(null); // clear data when going back to initial screen
 		} else if (currentView === "otp") {
             setCurrentView("enter-id");
-        } else if (currentView === "details" || currentView === "payment-options" || currentView === "payment-instructions" || currentView === "delivery-instructions") {
+        } else if (currentView === "details" || currentView === "payment-options" || currentView === "payment-instructions" || currentView === "delivery-instructions" || currentView === "pickup") {
 			setCurrentView("status"); // go back to main status view
 		}
   	};
@@ -48,6 +49,7 @@ function TrackFlow() {
         setLoading(false);
 	};
 	const handleViewDeliveryInstructions = () => setCurrentView("delivery-instructions");
+	const handlePickup = () => setCurrentView("pickup");
 
 	const handleSelectPaymentMethod = (method) => {
 		if (method === "online") {
@@ -111,6 +113,7 @@ function TrackFlow() {
                             onViewDetails={handleViewDetails}
                             onViewPaymentOptions={handleViewPaymentOptions}
                             onViewDeliveryInstructions={handleViewDeliveryInstructions}
+                            onPickup={handlePickup}
                             onBack={handleBack} // pass handleBack for the "Track Another" button
                         />
                     )}
@@ -138,6 +141,10 @@ function TrackFlow() {
 
                     {currentView === "delivery-instructions" && (
                         <DeliveryInstructions onBack={handleBack} />
+                    )}
+
+                    {currentView === "pickup" && (
+                        <PickupInstructions onBack={handleBack} />
                     )}
                 </ContentBox>
             )}
