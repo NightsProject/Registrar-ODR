@@ -11,7 +11,7 @@ function SubmitRequest({ trackingId }) {
   const handleLogoutAndRedirect = async (redirectPath) => {
     setLoading(true);
     try {
-      await fetch("/api/logout", {
+      await fetch("/api/clear-session", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -26,6 +26,10 @@ function SubmitRequest({ trackingId }) {
       // Clear any local or session storage (if used)
       localStorage.removeItem("jwtToken");
       sessionStorage.clear();
+
+      // Clear cookies to ensure session is fully cleared
+      document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "access_token_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
       // Redirect smoothly after logout
       setTimeout(() => {

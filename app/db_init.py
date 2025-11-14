@@ -164,7 +164,7 @@ def ready_request_requirements_links_table():
    CREATE TABLE IF NOT EXISTS request_requirements_links (
        request_id VARCHAR(15) REFERENCES requests(request_id) ON DELETE CASCADE,
        requirement_id VARCHAR(10) REFERENCES requirements(req_id) ON DELETE CASCADE,
-       file_path VARCHAR(255) NOT NULL,
+       file_url VARCHAR(255) NOT NULL,
        uploaded_at TIMESTAMP DEFAULT NOW(),
        PRIMARY KEY (request_id, requirement_id)
    )

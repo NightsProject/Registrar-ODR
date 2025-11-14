@@ -220,12 +220,15 @@ class Request:
     @staticmethod
     def delete_requirement_file(request_id, requirement_id):
         """
-        Delete a requirement file from disk and DB.
+        Delete a requirement file from Supabase and DB.
         """
+        from supabase import create_client, Client
+        from config import SUPABASE_URL, SUPABASE_ANON_KEY
+
         conn = db_pool.getconn()
         cur = conn.cursor()
         try:
-            # Get file path
+            # Get file URL
             cur.execute("""
                 SELECT file_path FROM request_requirements_links
                 WHERE request_id = %s AND requirement_id = %s
@@ -233,8 +236,13 @@ class Request:
             row = cur.fetchone()
             if row:
                 file_path = row[0]
-                if os.path.exists(file_path):
-                    os.remove(file_path)
+                # Extract file path from URL for deletion in Supabase
+                # Assuming URL is like https://supabase-url.supabase.co/storage/v1/object/public/requirements-odr/request_id/req_id_filename
+                # Extract path after 'requirements-odr/'
+                if 'requirements-odr/' in file_path:
+                    file_path_in_bucket = file_path.split('requirements-odr/')[1]
+                    supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+                    supabase.storage.from_('requirements-odr').remove([file_path_in_bucket])
 
                 # Delete from DB
                 cur.execute("""

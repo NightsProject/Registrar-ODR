@@ -13,6 +13,7 @@ requests = "*"
 flask-session = "*"
 python3-saml = "*"
 xmlsec = "*"
+supabase = "*"
 
 [dev-packages]
 
