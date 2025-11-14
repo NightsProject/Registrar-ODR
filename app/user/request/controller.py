@@ -418,32 +418,3 @@ def logout_user():
 
     print("[INFO] Session and JWT cleared successfully.")
     return response, 200
-
-@request_bp.route("/api/set-order-type", methods=["POST"])
-@jwt_required_with_role(role)
-def set_order_type():
-    """
-    Sets the order_type for the current request.
-    """
-    data = request.get_json()
-    request_id = session.get("request_id")
-    order_type = data.get("order_type")
-
-    if not request_id or not order_type:
-        return jsonify({
-            "success": False,
-            "notification": "Missing request_id or order_type."
-        }), 400
-
-    success = Request.set_order_type(request_id, order_type)
-
-    if success:
-        return jsonify({
-            "success": True,
-            "notification": f"Order type set to {order_type} successfully."
-        }), 200
-    else:
-        return jsonify({
-            "success": False,
-            "notification": "Failed to set order type."
-        }), 500

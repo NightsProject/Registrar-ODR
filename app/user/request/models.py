@@ -409,29 +409,3 @@ class Request:
         finally:
             cur.close()
             db_pool.putconn(conn)
-
-    @staticmethod
-    def set_order_type(request_id, order_type):
-        """
-        Sets the order_type for a request.
-        """
-        conn = db_pool.getconn()
-        cur = conn.cursor()
-
-        try:
-            cur.execute("""
-                UPDATE requests
-                SET order_type = %s
-                WHERE request_id = %s
-            """, (order_type, request_id))
-            conn.commit()
-            return True
-
-        except Exception as e:
-            print(f"Error setting order type: {e}")
-            conn.rollback()
-            return False
-
-        finally:
-            cur.close()
-            db_pool.putconn(conn)

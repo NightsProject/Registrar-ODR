@@ -3,7 +3,7 @@ from flask import jsonify, request, current_app, session
 from flask_jwt_extended import create_access_token, set_access_cookies
 from .models import Tracking
 from app.user.authentication.models import AuthenticationUser
-
+from app.utils.decorator import jwt_required_with_role
 
 role = 'user'
 
@@ -83,6 +83,7 @@ def get_tracking_data():
         }), 500
     
 @tracking_bp.route('/api/track/payment-complete', methods=['POST'], strict_slashes=False)
+@jwt_required_with_role(role)
 def mark_payment_complete():
     """
     API endpoint to mark a request's payment as complete.
@@ -109,6 +110,7 @@ def mark_payment_complete():
         return jsonify({"status": "error", "message": f"An unexpected error occurred: {str(e)}"}), 500
 
 @tracking_bp.route('/api/track/document/<tracking_number>', methods=['GET'])
+@jwt_required_with_role(role)
 def get_requested_documents(tracking_number):
     """
     API endpoint to fetch requested documents for a given tracking number and student ID.
@@ -132,4 +134,33 @@ def get_requested_documents(tracking_number):
         return jsonify({
             "status": "error",
             "message": f"An unexpected error occurred: {str(e)}"
+        }), 500
+
+@tracking_bp.route("/api/set-order-type", methods=["POST"])
+@jwt_required_with_role(role)
+def set_order_type():
+    """
+    Sets the order_type for the current request.
+    """
+    data = request.get_json()
+    request_id = session.get("tracking_number")
+    order_type = data.get("order_type")
+
+    if not request_id or not order_type:
+        return jsonify({
+            "success": False,
+            "notification": "Missing request_id or order_type."
+        }), 400
+
+    success = Tracking.set_order_type(request_id, order_type)
+
+    if success:
+        return jsonify({
+            "success": True,
+            "notification": f"Order type set to {order_type} successfully."
+        }), 200
+    else:
+        return jsonify({
+            "success": False,
+            "notification": "Failed to set order type."
         }), 500
