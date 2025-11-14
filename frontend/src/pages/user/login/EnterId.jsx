@@ -11,6 +11,17 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
     const [shake, setShake] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // Clear any existing sessions on component mount
+    useEffect(() => {
+        // Clear local and session storage
+        localStorage.removeItem("jwtToken");
+        sessionStorage.clear();
+
+        // Clear cookies
+        document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "access_token_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    }, []);
+
     const handleInputChange = (e) => {
     let value = e.target.value;
 
@@ -48,10 +59,6 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
             triggerError("Please enter a valid Student ID.");
             return;
         }
-
-        // Clear existing cookies to ensure no stale sessions or JWT tokens
-        document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "access_token_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
         setLoading(true);
         try {

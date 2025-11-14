@@ -5,7 +5,6 @@ import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ButtonLink from "../../../components/common/ButtonLink";
 import ContentBox from "../../../components/user/ContentBox";
 
-
 function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploadedFiles, onNext, onBack }) {
   const [requirements, setRequirements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -110,13 +109,7 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
     }
   };
 
-  // Compute deselected uploads (files no longer required)
-  const deselectedUploads = useMemo(() => {
-    const validReqIds = new Set(requirementsList.map(r => r.req_id));
-    return Object.entries(uploadedFiles)
-      .filter(([req_id, file]) => file && !validReqIds.has(req_id))
-      .map(([req_id, file]) => ({ req_id, file }));
-  }, [uploadedFiles, requirementsList]);
+
 
   // Check if all required files are uploaded
   const allRequiredUploaded = requirementsList.every(
@@ -147,7 +140,7 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
     });
 
     try {
-      const res = await fetch("/api/save-file", {
+      const res = await fetch("/api/save-file-supabase", {
         method: "POST",
         headers: { "X-CSRF-TOKEN": getCSRFToken() },
         credentials: "include",
@@ -220,7 +213,7 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
                               : uploadedFiles[req_id].split("/").pop()}
                           </span>
                           <img
-                            src="/assets/XIcon.svg"
+                            src="/Assets/Trash.svg"
                             alt="Remove Icon"
                             style={{ cursor: "pointer" }}
                             className="remove-icon"
@@ -239,22 +232,7 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
           </div>
         </div>
 
-        {/* Deselected uploads 
-        {deselectedUploads.length > 0 && (
-          <div className="deselected-uploads-container">
-            <h2>Deselected Files</h2>
-            <p>These files are no longer required. You can delete them if you wish:</p>
-            {deselectedUploads.map(({ req_id, file }) => (
-              <div key={req_id} className="requirement-upload-row">
-                <span className="file-name">{file instanceof File ? file.name : file.split("/").pop()}</span>
-                <button type="button" className="delete-btn" onClick={() => handleDeleteFile(req_id)} disabled={uploading}>
-                  Delete
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        */}
+
 
         <div className="action-section">
           {!allRequiredUploaded && (
