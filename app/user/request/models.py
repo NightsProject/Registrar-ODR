@@ -200,13 +200,13 @@ class Request:
     def get_uploaded_files(request_id):
         """
         Fetch previously uploaded requirement files for a given request.
-        Returns a dict: {requirement_id: file_path}
+        Returns a dict: {requirement_id: file_url}
         """
         conn = db_pool.getconn()
         cur = conn.cursor()
         try:
             cur.execute("""
-                SELECT requirement_id, file_path
+                SELECT requirement_id, file_url
                 FROM request_requirements_links
                 WHERE request_id = %s
             """, (request_id,))
@@ -230,7 +230,7 @@ class Request:
         try:
             # Get file URL
             cur.execute("""
-                SELECT file_path FROM request_requirements_links
+                SELECT file_url FROM request_requirements_links
                 WHERE request_id = %s AND requirement_id = %s
             """, (request_id, requirement_id))
             row = cur.fetchone()
@@ -307,7 +307,7 @@ class Request:
         Stores requirement files for a request.
         Args:
             request_id (str): The request ID.
-            requirements (list of dict): Each dict contains 'requirement_id' and 'file_path'.
+            requirements (list of dict): Each dict contains 'requirement_id' and 'file_url'.
         Returns:
             tuple: (success: bool, message: str)
         """
@@ -321,20 +321,20 @@ class Request:
             insert_values = []
             for req in requirements:
                 requirement_id = req.get("requirement_id")
-                file_path = req.get("file_path")
-                if not requirement_id or not file_path:
+                file_url = req.get("file_url")
+                if not requirement_id or not file_url:
                     continue
-                insert_values.append((request_id, requirement_id, file_path))
+                insert_values.append((request_id, requirement_id, file_url))
 
             if not insert_values:
                 return False, "No valid requirement files provided."
 
             # Bulk insert with ON CONFLICT
             cur.executemany("""
-                INSERT INTO request_requirements_links (request_id, requirement_id, file_path)
+                INSERT INTO request_requirements_links (request_id, requirement_id, file_url)
                 VALUES (%s, %s, %s)
                 ON CONFLICT (request_id, requirement_id)
-                DO UPDATE SET file_path = EXCLUDED.file_path, uploaded_at = NOW()
+                DO UPDATE SET file_url = EXCLUDED.file_url, uploaded_at = NOW()
             """, insert_values)
 
             conn.commit()

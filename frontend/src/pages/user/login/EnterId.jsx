@@ -10,8 +10,6 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
     const [loading, setLoading] = useState(false);
-<<<<<<< HEAD
-=======
 
     // Clear any existing sessions on component mount
     useEffect(() => {
@@ -23,7 +21,6 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
         document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         document.cookie = "access_token_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     }, []);
->>>>>>> ODR-5-feat(supabase)--integrate-supabase-for-upload-requirements
 
     const handleInputChange = (e) => {
     let value = e.target.value;

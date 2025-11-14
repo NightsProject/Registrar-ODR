@@ -319,7 +319,7 @@ def insert_sample_data():
            ("R0000008", "REQ0003", "uploads/R0000008_REQ0003_photo.jpg"),
        ]
        cur.executemany(
-           "INSERT INTO request_requirements_links (request_id, requirement_id, file_path) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+           "INSERT INTO request_requirements_links (request_id, requirement_id, file_url) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
            req_req_links_values
        )
 
@@ -351,8 +351,6 @@ def initialize_db():
    ready_logs_table()
    insert_sample_data()
    print("Database and tables initialized successfully.")
-
-
 
 
 if __name__ == "__main__":

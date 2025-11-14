@@ -55,13 +55,13 @@ class ManageRequestModel:
 
                 # Fetch uploaded files
                 cur.execute("""
-                    SELECT r.requirement_name, rrl.file_path
+                    SELECT r.requirement_name, rrl.file_url
                     FROM request_requirements_links rrl
                     JOIN requirements r ON rrl.requirement_id = r.req_id
                     WHERE rrl.request_id = %s
                 """, (request_id,))
                 files = cur.fetchall()
-                request_data["uploaded_files"] = [{"requirement": file[0], "file_path": file[1]} for file in files]
+                request_data["uploaded_files"] = [{"requirement": file[0], "file_url": file[1]} for file in files]
 
                 # Fetch recent logs
                 recent_logs = ManageRequestModel.get_recent_logs_for_request(request_id, limit=1)
