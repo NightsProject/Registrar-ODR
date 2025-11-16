@@ -70,12 +70,23 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
     return Array.from(uniqueReqs.values());
   }, [selectedDocs, requirements]);
 
+  // Compute deselected uploads: requirements that are uploaded but no longer in current list
+  const deselectedUploads = useMemo(() => {
+    const currentReqIds = new Set(requirementsList.map(r => r.req_id));
+    return Object.keys(uploadedFiles).filter(req_id => !currentReqIds.has(req_id) && typeof uploadedFiles[req_id] === 'string').map(req_id => ({ req_id }));
+  }, [requirementsList, uploadedFiles]);
+
   // Sync uploaded files with current requirements
   useEffect(() => {
     const validReqIds = new Set(requirementsList.map(r => r.req_id));
 
-    // Keep existing valid uploads and add new ones
-    const updatedUploads = { ...uploadedFiles };
+    // Keep existing valid uploads and add new ones, remove deselected
+    const updatedUploads = {};
+    Object.keys(uploadedFiles).forEach(req_id => {
+      if (validReqIds.has(req_id)) {
+        updatedUploads[req_id] = uploadedFiles[req_id];
+      }
+    });
     requirementsList.forEach(({ req_id }) => {
       if (!(req_id in updatedUploads)) updatedUploads[req_id] = null;
     });
