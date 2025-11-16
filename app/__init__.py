@@ -25,10 +25,9 @@ def create_app(test_config=None):
     
     
     #in production
-    app = Flask(__name__, instance_relative_config=True, static_folder="static/react", template_folder="templates")
-  
-    #in development
-    #app = Flask(__name__, static_folder="../frontend/build/static", template_folder="../frontend/")
+    #app = Flask(__name__, instance_relative_config=True, static_folder="static/react", template_folder="templates")
+
+    app = Flask(__name__)
     
     
     # =====================
