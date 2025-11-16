@@ -1,7 +1,7 @@
 import React from 'react';
 import './RequestModal.css';
 
-const RequestModal = ({ request, onClose }) => {
+const RequestModal = ({ request, onClose, onDelete }) => {
   if (!request) return null;
 
   return (
