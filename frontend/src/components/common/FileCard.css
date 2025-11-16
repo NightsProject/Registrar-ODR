@@ -7,12 +7,12 @@
     height: 321px;
     background: var(--color-white);
 
-    -webkit-mask-image: url('../../../public/Assets/FileCard.svg');
+    -webkit-mask-image: url('../../../public/assets/FileCard.svg');
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-size: cover;
     -webkit-mask-position: center;
 
-    mask-image: url('../../../public/Assets/FileCard.svg');
+    mask-image: url('../../../public/assets/FileCard.svg');
     mask-repeat: no-repeat;
     mask-size: cover;
     mask-position: center;

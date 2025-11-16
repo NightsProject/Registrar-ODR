@@ -36,7 +36,7 @@ function ViewDocuments() {
       {!loading && (
         <div className="select-documents-page">
           <div className="hero-section">
-            <img src="/Assets/HeroImage.png" alt="Request" className="hero-image" />
+            <img src="/assets/HeroImage.png" alt="Request" className="hero-image" />
             <div className="welcome-text">
               <h1>Welcome to the Online Document Request System</h1>
               <p className="subtext">

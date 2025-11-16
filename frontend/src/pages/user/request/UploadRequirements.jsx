@@ -345,7 +345,7 @@ function UploadRequirements({
                         <div className="requirement-item-action">
                           <span className="file-name">{displayFileName(entry)}</span>
                           <img
-                            src="/Assets/Trash.svg"
+                            src="/assets/Trash.svg"
                             alt="Remove Icon"
                             style={{ cursor: uploading ? "not-allowed" : "pointer" }}
                             className="remove-icon"
