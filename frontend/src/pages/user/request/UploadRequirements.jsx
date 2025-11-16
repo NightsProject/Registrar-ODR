@@ -94,18 +94,25 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
     const confirmed = window.confirm("Are you sure you want to delete this file?");
     if (!confirmed) return;
 
-    try {
-      const res = await fetch(`/api/delete-file/${req_id}`, {
-        method: "DELETE",
-        headers: { "X-CSRF-TOKEN": getCSRFToken() },
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (data.success) setUploadedFiles(prev => ({ ...prev, [req_id]: null }));
-      else alert(data.notification);
-    } catch (err) {
-      console.error("Failed to delete file:", err);
-      alert("Failed to delete file.");
+    const file = uploadedFiles[req_id];
+    if (typeof file === "string") {
+      // File is already uploaded on server, call API to delete
+      try {
+        const res = await fetch(`/api/delete-file/${req_id}`, {
+          method: "DELETE",
+          headers: { "X-CSRF-TOKEN": getCSRFToken() },
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (data.success) setUploadedFiles(prev => ({ ...prev, [req_id]: null }));
+        else alert(data.notification);
+      } catch (err) {
+        console.error("Failed to delete file:", err);
+        alert("Failed to delete file.");
+      }
+    } else {
+      // File is local (File object), just remove locally
+      setUploadedFiles(prev => ({ ...prev, [req_id]: null }));
     }
   };
 
@@ -116,7 +123,7 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
     ({ req_id }) => uploadedFiles[req_id] instanceof File || typeof uploadedFiles[req_id] === "string"
   );
 
- // Handle proceed
+  // Handle proceed
   const handleProceedClick = async () => {
     if (!allRequiredUploaded) {
       alert("Please upload all required files before proceeding.");
@@ -132,6 +139,10 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
       alreadyUploaded: typeof uploadedFiles[req_id] === "string" // true if already uploaded
     }));
     formData.append("requirements", JSON.stringify(reqs));
+
+    // Include deselected requirement IDs for deletion
+    const deselectedReqIds = deselectedUploads.map(({ req_id }) => req_id);
+    formData.append("deselected_requirements", JSON.stringify(deselectedReqIds));
 
     // Only append new files (File instances) to FormData
     requirementsList.forEach(({ req_id }) => {

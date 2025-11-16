@@ -199,24 +199,33 @@ def submit_requirement_files_supabase():
     """
     Accepts requirement files from React, uploads them to Supabase S3, and stores file URLs to the database.
     Skips saving requirements that are already uploaded.
+    Deletes deselected files that are no longer required.
     Expected multipart/form-data format:
     - request_id: "R0000123"
     - requirements: JSON string like [
           {"requirement_id": "REQ0001", "alreadyUploaded": true},
           {"requirement_id": "REQ0002", "alreadyUploaded": false}
       ]
+    - deselected_requirements: JSON string like ["REQ0003", "REQ0004"]
     - files: file uploads with keys like "file_REQ0001", "file_REQ0002"
     """
     request_id = session.get("request_id")
     requirements_json = request.form.get("requirements")
+    deselected_json = request.form.get("deselected_requirements")
     if not requirements_json:
         return jsonify({"success": False, "notification": "No requirements provided."}), 400
 
     try:
         import json
         requirements = json.loads(requirements_json)
+        deselected_requirements = json.loads(deselected_json) if deselected_json else []
     except json.JSONDecodeError:
-        return jsonify({"success": False, "notification": "Invalid requirements format."}), 400
+        return jsonify({"success": False, "notification": "Invalid requirements or deselected format."}), 400
+
+    # Delete deselected files first
+    if deselected_requirements:
+        for req_id in deselected_requirements:
+            Request.delete_requirement_file(request_id, req_id)
 
     # Initialize Supabase client
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
