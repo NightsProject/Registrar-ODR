@@ -24,7 +24,7 @@ function App() {
           <Route path="Landing" element={< Landing />} />
           <Route path="login" element={< LoginFlow />}/>
           <Route path="Request" element={< RequestFlow />} />
-          <Route path="View" element={< DocumentList />} />
+          <Route path="documents" element={< DocumentList />} />
           <Route path="Track" element={< Tracking />} />
         </Route>
         

@@ -1,0 +1,78 @@
+html {
+  scroll-behavior: smooth;
+}
+
+.select-documents-page {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.hero-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 24px;
+    padding: 80px 0px 100px 0px;
+    background-color: var(--color-white);
+}
+
+.bottom-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 24px;
+    padding: 80px 0px;
+    background-color: var(--color-primary);
+}
+
+.user-searchbar-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 0px 100px;
+  box-sizing: border-box;
+}
+
+.hero-image{
+    width: 600px;
+    height: auto;
+}
+
+.hero-section .subtext {
+    text-align: center;
+    height: auto;
+}
+
+.view-documents-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    background-color: var(--color-button-primary-default);
+    color: var(--color-white);
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 50px;
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.view-documents-btn:hover {
+    background-color: var(--color-button-primary-hover);
+}
+
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(262px, 1fr));
+    justify-content: start;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}

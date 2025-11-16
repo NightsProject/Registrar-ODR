@@ -147,8 +147,8 @@ const handleRemoveRequirement = (index) => {
     };
 
     const url = isEditMode
-      ? `http://127.0.0.1:8000/admin/edit-document/${document.doc_id}`
-      : "http://127.0.0.1:8000/admin/add-documents";
+      ? `/admin/edit-document/${document.doc_id}`
+      : "/admin/add-documents";
 
     const method = isEditMode ? "PUT" : "POST";
 
