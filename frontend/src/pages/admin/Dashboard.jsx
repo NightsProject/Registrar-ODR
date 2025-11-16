@@ -341,9 +341,88 @@ function Dashboard() {
 
   const notificationsData = dashboardData ? dashboardData.notifications : [];
 
-
+  
   if (loading) {
-    return <div className="dashboard-content"><p>Loading dashboard...</p></div>;
+    return (
+      <div className="dashboard-content">
+        {/* Header Skeleton */}
+        <div className="dashboard-header-wrapper">
+          <div className="header-content">
+            <div className="skeleton skeleton-title" style={{ width: '300px', height: '32px' }}></div>
+
+            <div className="header-controls">
+              <div className="skeleton skeleton-search" style={{ width: '300px', height: '40px' }}></div>
+              <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px' }}></div>
+              <div className="skeleton skeleton-profile" style={{ width: '150px', height: '40px' }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stat Cards Skeleton */}
+        <div className="stat-cards-content">
+          <div className="stat-cards-wrapper scroll-hide">
+            <div className="stat-card-inner-scroll">
+              {[1, 2, 3, 4].map((_, index) => (
+                <div key={index} className="stat-card">
+                  <div className="card-header">
+                    <div className="skeleton skeleton-circle" style={{ width: '48px', height: '48px' }}></div>
+                    <div className="skeleton skeleton-text" style={{ width: '120px', height: '16px', marginTop: '8px' }}></div>
+                  </div>
+                  <div className="card-content-body">
+                    <div className="skeleton skeleton-text" style={{ width: '140px', height: '14px', marginBottom: '12px' }}></div>
+                    <div className="skeleton skeleton-value" style={{ width: '100px', height: '32px' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity Skeleton */}
+        <div className="recent-activity-wrapper mt-10 bg-white rounded-2xl shadow p-6">
+          <div className="skeleton skeleton-text" style={{ width: '180px', height: '24px', marginBottom: '16px' }}></div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left">
+                    <div className="skeleton skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                  </th>
+                  <th className="px-4 py-2 text-left">
+                    <div className="skeleton skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                  </th>
+                  <th className="px-4 py-2 text-left">
+                    <div className="skeleton skeleton-text" style={{ width: '100px', height: '14px' }}></div>
+                  </th>
+                  <th className="px-4 py-2 text-left">
+                    <div className="skeleton skeleton-text" style={{ width: '60px', height: '14px' }}></div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {[1, 2, 3, 4, 5].map((_, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-2">
+                      <div className="skeleton skeleton-text" style={{ width: '60px', height: '14px' }}></div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="skeleton skeleton-text" style={{ width: '120px', height: '14px' }}></div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="skeleton skeleton-text" style={{ width: '140px', height: '14px' }}></div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="skeleton skeleton-pill" style={{ width: '100px', height: '24px' }}></div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
   }
 
 
