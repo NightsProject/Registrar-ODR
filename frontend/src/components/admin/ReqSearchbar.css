@@ -1,0 +1,21 @@
+.req-search-bar-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.req-search-bar-container { 
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    padding: 8px;
+    gap: 16px;
+
+    border: 1px solid #6E6E73;
+    border-radius: 10px;
+
+    width: 100%;
+    box-sizing: border-box;
+
+}

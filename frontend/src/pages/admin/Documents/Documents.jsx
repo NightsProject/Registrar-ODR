@@ -5,6 +5,7 @@ import AddCard from "../../../components/common/AddCard";
 import Popup from "../../../components/admin/Popup";
 import DeletePopup from "../../../components/admin/DeletePopup";
 import SearchBar from "../../../components/common/SearchBar";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 function Documents() {
   const [documents, setDocuments] = useState([]);
@@ -14,6 +15,7 @@ function Documents() {
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleOpenDelete = (doc) => {
     setSelectedDoc(doc);
@@ -27,13 +29,19 @@ function Documents() {
 
   const handleDelete = async (docId) => {
     try {
+      setLoading(true);
       const res = await fetch(`/admin/delete-document/${docId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete document");
-      fetchDocuments(); // refresh list
+
+      await fetchDocuments();  // refresh list
+
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
+
 
   // Open the add/edit popup
   const handleEdit = (doc) => {
@@ -49,22 +57,31 @@ function Documents() {
   const handleOpen = () => setShowPopup(true);
 
   // Fetch documents, requirements, and joined data
-  const fetchDocuments = () => {
-    fetch("/admin/get-documents")
-      .then((res) => res.json())
-      .then((data) => setDocuments(data))
-      .catch((err) => console.error("Error fetching documents:", err));
+  const fetchDocuments = async () => {
+  try {
+    setLoading(true);
 
-    fetch("/admin/get-document-requirements")
-      .then((res) => res.json())
-      .then((data) => setRequirements(data))
-      .catch((err) => console.error("Error fetching requirements:", err));
+    const [docsRes, reqRes, joinRes] = await Promise.all([
+      fetch("/admin/get-documents"),
+      fetch("/admin/get-document-requirements"),
+      fetch("/admin/get-documents-with-requirements")
+    ]);
 
-    fetch("/admin/get-documents-with-requirements")
-      .then((res) => res.json())
-      .then((data) => setDocumentsWithRequirements(data))
-      .catch((err) => console.error("Error fetching joined documents:", err));
-  };
+    const docsData = await docsRes.json();
+    const reqData = await reqRes.json();
+    const joinData = await joinRes.json();
+
+    setDocuments(docsData);
+    setRequirements(reqData);
+    setDocumentsWithRequirements(joinData);
+
+  } catch (err) {
+    console.error("Error fetching:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
   const delay = setTimeout(() => {
@@ -78,18 +95,6 @@ function Documents() {
     fetchDocuments();
   }, []);
 
-  useEffect(() => {
-    if (documents.length > 0 && requirements.length > 0) {
-      const docsWithReqs = documents.map((doc) => {
-        const reqsForDoc = requirements
-          .filter((r) => r.doc_id === doc.doc_id)
-          .map((r) => r.requirement_name);
-        return { ...doc, requirements: reqsForDoc };
-      });
-      setDocumentsWithRequirements(docsWithReqs);
-    }
-  }, [documents, requirements]);
-
   const sortedDocuments = [...documentsWithRequirements].sort((a, b) =>
     b.doc_id.localeCompare(a.doc_id)
   );
@@ -101,6 +106,7 @@ function Documents() {
 
   return (
     <div>
+      {loading && <LoadingSpinner message="Loading documents..." />}
       <div className="toolbar">
         <h1 className="title">Manage Documents</h1>
         <SearchBar onChange={setSearchTerm} />

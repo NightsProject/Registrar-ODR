@@ -1,0 +1,48 @@
+.requirements-overlay{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+}
+
+.requirements-popup {
+    /* Auto layout */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 100px;
+    gap: 24px;
+
+    width: 620px;
+    height: 620px;
+
+    background: var(--color-white);
+    border-radius: 20px;
+
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+    z-index: 1000;
+}
+.requirements-popup .requirement-action-section{
+    margin-top: 8px;
+}
+
+.requirements-popup .requirement-item-wrapper{
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    gap: 8px;
+}
+
+.search-section {
+    width: 100%;
+}

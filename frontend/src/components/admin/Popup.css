@@ -57,7 +57,13 @@ hr{
 .requirements-wrapper{
     height: 100%;
 }
-
+.popup .requirement-item-wrapper{
+    display: flex;
+    flex-direction: column;
+    height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
 .price-wrapper{
     display: flex;
     flex-direction: row;
@@ -67,8 +73,7 @@ hr{
     width: 100%;
 }
 
-.name-section, .description-section, 
-.requirements-section, .price-section, 
+.name-section, .description-section, .price-section, 
 .requirement-item, .add-requirement-section{
     display: flex;
     flex-direction: column;
@@ -82,16 +87,17 @@ hr{
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
+    gap: 8px;
 }
 
-.requirement-item .remove-icon {
+.requirement-item .remove-icon, .requirement-item .edit-icon{
   opacity: 0;
   cursor: pointer;
   width: 20px;
   height: 20px;
 }
 
-.requirement-item:hover .remove-icon {
+.requirement-item:hover .remove-icon, .requirement-item:hover .edit-icon{
   opacity: 1;
 }
 
@@ -148,7 +154,6 @@ hr{
 .popup-error-section{
     display: flex;
     justify-content: left;
-    height: 8px;
     width: 100%;
 }
 

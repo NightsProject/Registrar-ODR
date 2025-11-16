@@ -1,0 +1,42 @@
+.edit-req-overlay{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2); /* <-- that’s the dimming */
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+}
+
+.edit-popup{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 100px;
+    gap: 24px;
+
+    width: 300px;
+
+    background: var(--color-white);
+    border-radius: 20px;
+
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+    z-index: 1000;
+}
+
+.edit-popup .input-section {
+  margin-top: 0px;
+  height: 42px;
+}
+
+.edit-popup .box-input {
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
