@@ -172,6 +172,19 @@ def ready_request_requirements_links_table():
    execute_query(query)
 
 
+def ready_logs_table():
+   query = """
+   CREATE TABLE IF NOT EXISTS logs (
+       log_id SERIAL PRIMARY KEY,
+       admin_id VARCHAR(100) NOT NULL,
+       action VARCHAR(255) NOT NULL,
+       details TEXT,
+       timestamp TIMESTAMP DEFAULT NOW()
+   )
+   """
+   execute_query(query)
+
+
 
 
 # ==========================
@@ -335,6 +348,7 @@ def initialize_db():
    ready_requests_table()
    ready_request_documents_table()
    ready_request_requirements_links_table()
+   ready_logs_table()
    insert_sample_data()
    print("Database and tables initialized successfully.")
 

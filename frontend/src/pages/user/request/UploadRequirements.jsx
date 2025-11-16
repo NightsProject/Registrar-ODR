@@ -110,7 +110,6 @@ function UploadRequirements({ selectedDocs = [], uploadedFiles = {}, setUploaded
   };
 
 
-
   // Check if all required files are uploaded
   const allRequiredUploaded = requirementsList.every(
     ({ req_id }) => uploadedFiles[req_id] instanceof File || typeof uploadedFiles[req_id] === "string"
