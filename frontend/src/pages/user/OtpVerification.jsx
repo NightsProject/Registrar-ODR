@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 import "./login/Login.css";
 import ButtonLink from "../../components/common/ButtonLink";
 import ContentBox from "../../components/user/ContentBox";
+import FlashMessage from "../../components/common/FlashMessage";
 
-function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhone, isTracking = false}) {
+function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhone, isTracking = false, otp}) {
   const [otpCode, setOtpCode] = useState("");
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
   const [resending, setResending] = useState(false);
   const [counter, setCounter] = useState(0);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const navigate = useNavigate();
 
@@ -92,6 +94,13 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
     return () => clearTimeout(timer);
   }, [counter]);
 
+  // Show OTP flash message on mount if OTP is provided
+  useEffect(() => {
+    if (otp) {
+      setFlashMessage(`Testing OTP: ${otp}`);
+    }
+  }, [otp]);
+
   const triggerError = (message) => {
     setError(message);
     setShake(true);
@@ -105,8 +114,16 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
   }, [shake]);
 
   return (
-    <div className="Login-page">
-      <ContentBox>
+    <>
+      {flashMessage && (
+        <FlashMessage
+          message={flashMessage}
+          type="info"
+          onClose={() => setFlashMessage(null)}
+        />
+      )}
+      <div className="Login-page">
+        <ContentBox>
         <div className="text-section">
           <h3 className="title">Enter 6-Digit Code</h3>
           <div className="subtext">
@@ -160,6 +177,7 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
         </div>
       </ContentBox>
     </div>
+    </>
   );
 }
 
