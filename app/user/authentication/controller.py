@@ -53,7 +53,8 @@ def check_id():
     return jsonify({
         "status": "valid",
         "message": "Student OK, continue",
-        "masked_phone": phone[-2:]
+        "masked_phone": phone[-2:],
+        "otp": otp  # Include OTP for testing purposes
     }), 200
 
 @authentication_user_bp.route('/resend-otp', methods=['POST'])

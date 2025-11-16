@@ -3,6 +3,7 @@ import "./Login.css";
 import ButtonLink from "../../../components/common/ButtonLink";
 import ContentBox from "../../../components/user/ContentBox";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import FlashMessage from "../../../components/common/FlashMessage";
 
 
 function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
@@ -10,6 +11,7 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [flashMessage, setFlashMessage] = useState(null);
 
     // Clear any existing sessions on component mount
     useEffect(() => {
@@ -86,6 +88,10 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
 
             setMaskedPhone(data.masked_phone);
             setError("");
+            // Show flash message with OTP for testing
+            if (data.otp) {
+                setFlashMessage(`Testing OTP: ${data.otp}`);
+            }
             onNext();
         } catch (error) {
             triggerError("An error occurred. Please try again.");
@@ -111,6 +117,13 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone}) {
     return (
         <>
             {loading && <LoadingSpinner message="Verifying student ID..." />}
+            {flashMessage && (
+                <FlashMessage
+                    message={flashMessage}
+                    type="info"
+                    onClose={() => setFlashMessage(null)}
+                />
+            )}
             <div className="Login-page">
                 <ContentBox>
                     <div className="text-section">

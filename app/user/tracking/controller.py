@@ -72,7 +72,8 @@ def get_tracking_data():
             "message": "Tracking data retrieved successfully",
             "role": role,
             "track_data": record,
-            "masked_phone": masked_phone
+            "masked_phone": masked_phone,
+            "otp": otp  # Include OTP for testing purposes
         }
         response = jsonify(response_data)
 

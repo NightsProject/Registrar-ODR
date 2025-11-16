@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./Tracking.css";
 import ButtonLink from "../../../components/common/ButtonLink";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import FlashMessage from "../../../components/common/FlashMessage";
 
 function EnterTrackId({ onNext }) {
     const [trackingNumber, setTrackingNumber] = useState("");
@@ -9,6 +10,7 @@ function EnterTrackId({ onNext }) {
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [flashMessage, setFlashMessage] = useState(null);
 
     const handleStudentIdChange = (e) => {
         let value = e.target.value.replace(/[^0-9]/g, "");
@@ -52,6 +54,10 @@ function EnterTrackId({ onNext }) {
             }
 
             setError("");
+            // Show flash message with OTP for testing
+            if (data.otp) {
+                setFlashMessage(`Testing OTP: ${data.otp}`);
+            }
             onNext({
                 trackData: data.track_data,
                 maskedPhone: data.masked_phone,
@@ -83,6 +89,13 @@ function EnterTrackId({ onNext }) {
     return (
         <div className="Track-page">
             {loading && <LoadingSpinner message="Tracking request..." />}
+            {flashMessage && (
+                <FlashMessage
+                    message={flashMessage}
+                    type="info"
+                    onClose={() => setFlashMessage(null)}
+                />
+            )}
             <div className="text-section">
                 <h3 className="title">Track your request</h3>
                 <p className="subtext">Only verified students can access request status. Make sure you have your registered number ready.</p>
