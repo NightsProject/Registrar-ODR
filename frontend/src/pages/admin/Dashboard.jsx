@@ -471,39 +471,52 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {dashboardData.recent_activity.map((activity, index) => {
-                  const formattedDate = new Date(activity.requested_at).toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  });
+                    {dashboardData.recent_activity.map((activity, index) => {
+                      const parseDateTime = (dateStr) => {
+                        if (!dateStr || dateStr === "Unknown") return "Unknown";
 
-                  let statusColor = "bg-gray-500"; 
-                  switch (activity.status) {
-                    case "UNCONFIRMED": statusColor = "bg-gray-500"; break;
-                    case "SUBMITTED": statusColor = "bg-blue-500"; break;
-                    case "PENDING": statusColor = "bg-yellow-500"; break;
-                    case "IN-PROGRESS": statusColor = "bg-indigo-500"; break;
-                    case "DOC-READY": statusColor = "bg-purple-500"; break;
-                    case "RELEASED": statusColor = "bg-green-600"; break;
-                    case "REJECTED": statusColor = "bg-red-600"; break;
-                  }
+                        const [time, date] = dateStr.split(' ');
+                        const [hours, minutes] = time.split(':');
+                        const [day, month, year] = date.split('/');
 
-                  return (
-                    <tr key={index} className="hover:bg-gray-50 transition">
-                      <td className="px-4 py-2 text-sm text-black font-semibold">{activity.request_id}</td>
-                      <td className="px-4 py-2 text-sm text-black">{activity.full_name}</td>
-                      <td className="px-4 py-2 text-sm text-black">{formattedDate}</td>
-                      <td className="px-4 py-2 text-sm font-semibold">
-                        <span className={`px-2 py-1 rounded-full text-white text-xs ${statusColor}`}>
-                          {activity.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        const dateObj = new Date(year, month - 1, day, hours, minutes);
+
+                        return dateObj.toLocaleString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        });
+                      };
+
+                      const formattedDate = parseDateTime(activity.requested_at);
+
+                      let statusColor = "bg-gray-500";
+                      switch (activity.status) {
+                        case "UNCONFIRMED": statusColor = "bg-gray-500"; break;
+                        case "SUBMITTED": statusColor = "bg-blue-500"; break;
+                        case "PENDING": statusColor = "bg-yellow-500"; break;
+                        case "IN-PROGRESS": statusColor = "bg-indigo-500"; break;
+                        case "DOC-READY": statusColor = "bg-purple-500"; break;
+                        case "RELEASED": statusColor = "bg-green-600"; break;
+                        case "REJECTED": statusColor = "bg-red-600"; break;
+                      }
+
+                      return (
+                        <tr key={index} className="hover:bg-gray-50 transition">
+                          <td className="px-4 py-2 text-sm text-black font-semibold">{activity.request_id}</td>
+                          <td className="px-4 py-2 text-sm text-black">{activity.full_name}</td>
+                          <td className="px-4 py-2 text-sm text-black">{formattedDate}</td>
+                          <td className="px-4 py-2 text-sm font-semibold">
+                            <span className={`px-2 py-1 rounded-full text-white text-xs ${statusColor}`}>
+                              {activity.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
               </tbody>
             </table>
           </div>
