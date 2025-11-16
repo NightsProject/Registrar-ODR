@@ -19,6 +19,7 @@ function TrackFlow() {
     const [maskedPhone, setMaskedPhone] = useState("");
     const [studentId, setStudentId] = useState("");
     const [loading, setLoading] = useState(false);
+    const [otp, setOtp] = useState("");
 
     // the 'data' parameter will hold the response from the tracking API
     const handleTrackIdSubmit = (data) => {
@@ -26,6 +27,7 @@ function TrackFlow() {
 		setTrackData(data.trackData);
         setMaskedPhone(data.maskedPhone);
         setStudentId(data.studentId);
+        setOtp(data.otp || "");
 		setCurrentView("otp");
         setLoading(false);
     };
@@ -136,6 +138,7 @@ function TrackFlow() {
                     studentId={studentId}
                     maskedPhone={maskedPhone}
                     isTracking={true}
+                    otp={otp}
                 />
             ) : (
                 <ContentBox key={currentView}> {/* animation on every view change */}
