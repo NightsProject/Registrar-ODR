@@ -245,7 +245,7 @@ def submit_requirement_files_supabase():
                     if file_exists:
                         # File exists, get existing URL and skip upload
                         file_url = supabase.storage.from_('requirements-odr').get_public_url(file_path_in_bucket)
-                        saved_files.append({"requirement_id": requirement_id, "file_url": file_url})
+                        saved_files.append({"requirement_id": requirement_id, "file_path": file_url})
                         print("already exists in supabase, skipping upload")
                         continue
                     
@@ -259,7 +259,7 @@ def submit_requirement_files_supabase():
                     supabase.storage.from_('requirements-odr').upload(file_path_in_bucket, file_content, {"content-type": file.content_type})
                     # Get public URL
                     file_url = supabase.storage.from_('requirements-odr').get_public_url(file_path_in_bucket)
-                    saved_files.append({"requirement_id": requirement_id, "file_url": file_url})
+                    saved_files.append({"requirement_id": requirement_id, "file_path": file_url})
                 except Exception as e:
                     print(f"Error uploading file {filename} to Supabase: {e}")
                     return jsonify({"success": False, "notification": f"Failed to upload {filename}."}), 500
@@ -288,7 +288,6 @@ def submit_requirement_files_supabase():
     success, message = Request.store_requirement_files(request_id, saved_files)
     status_code = 200 if success else 400
     return jsonify({"success": success, "notification": message}), status_code
-
 
 @request_bp.route("/api/get-uploaded-files", methods=["GET"])
 @jwt_required_with_role(role)
