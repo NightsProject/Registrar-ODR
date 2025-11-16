@@ -237,12 +237,16 @@ class Request:
             if row:
                 file_path = row[0]
                 # Extract file path from URL for deletion in Supabase
-                # Assuming URL is like https://supabase-url.supabase.co/storage/v1/object/public/requirements-odr/request_id/req_id_filename
+                # URL Format is https://supabase-url.supabase.co/storage/v1/object/public/requirements-odr/request_id/req_id_filename
                 # Extract path after 'requirements-odr/'
-                if 'requirements-odr/' in file_path:
-                    file_path_in_bucket = file_path.split('requirements-odr/')[1]
-                    supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-                    supabase.storage.from_('requirements-odr').remove([file_path_in_bucket])
+                from urllib.parse import urlparse
+                parsed = urlparse(file_path)
+                if parsed.path and 'requirements-odr' in parsed.path:
+                    path_parts = parsed.path.split('requirements-odr/', 1)
+                    if len(path_parts) > 1:
+                        file_path_in_bucket = path_parts[1]
+                        supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+                        supabase.storage.from_('requirements-odr').remove([file_path_in_bucket])
 
                 # Delete from DB
                 cur.execute("""

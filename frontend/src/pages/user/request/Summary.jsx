@@ -4,10 +4,17 @@ import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ButtonLink from "../../../components/common/ButtonLink";
 import ContentBox from "../../../components/user/ContentBox";
 
-function Summary({ selectedDocs = [], uploadedFiles = {}, preferredContactInfo = {}, contactInfo = {}, onBack, onNext }) {
+function Summary({
+  selectedDocs = [],
+  uploadedFiles = {},
+  preferredContactInfo = {},
+  contactInfo = {},
+  onNext = () => {},
+  onBack = () => {},
+}) {
   const [completing, setCompleting] = useState(false);
 
-  // Calculate total price (placeholder, assuming each doc has cost)
+  // Calculate total price
   const totalPrice = selectedDocs.reduce((sum, doc) => sum + (doc.cost * doc.quantity || 0), 0);
 
   const handleComplete = () => {

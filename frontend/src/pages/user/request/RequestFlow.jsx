@@ -15,7 +15,7 @@ function RequestFlow() {
   // the request id is obtained through session
 
   // State to hold data from each step for final submission
-  const [uploadedFiles, setUploadedFiles] = useState({}); // e.g. { req_id: File }
+  const [uploadedFiles, setUploadedFiles] = useState({}); // e.g. { req_id: File | string (server path) | null }
   const [preferredContactInfo, setPreferredContactInfo] = useState({});
   const [contactInfo, setContactInfo] = useState({ email: "", contact_number: "" });
 
@@ -72,6 +72,18 @@ function RequestFlow() {
 
   // Handle Next from RequestList with updated docs (including quantity)
   const handleRequestListProceed = (updatedDocs) => {
+    // Compute deselected requirements based on previous selectedDocs
+    const prevReqIds = new Set();
+    selectedDocs.forEach(doc => {
+      if (doc.requirements) {
+        doc.requirements.forEach(reqName => {
+          // We need to map reqName to req_id, but since we don't have requirements here, we'll compute later in UploadRequirements
+          // For now, just track the change
+        });
+      }
+    });
+    // Actually, better to compute deselected in UploadRequirements based on current requirementsList vs uploadedFiles
+    // So no need to compute here, just update selectedDocs
     setSelectedDocs(updatedDocs);
     goNextStep();
   };

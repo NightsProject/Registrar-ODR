@@ -211,21 +211,16 @@ def submit_requirement_files_supabase():
     """
     request_id = session.get("request_id")
     requirements_json = request.form.get("requirements")
-    deselected_json = request.form.get("deselected_requirements")
     if not requirements_json:
         return jsonify({"success": False, "notification": "No requirements provided."}), 400
 
     try:
         import json
         requirements = json.loads(requirements_json)
-        deselected_requirements = json.loads(deselected_json) if deselected_json else []
     except json.JSONDecodeError:
-        return jsonify({"success": False, "notification": "Invalid requirements or deselected format."}), 400
+        return jsonify({"success": False, "notification": "Invalid requirements format."}), 400
 
-    # Delete deselected files first
-    if deselected_requirements:
-        for req_id in deselected_requirements:
-            Request.delete_requirement_file(request_id, req_id)
+    # Note: Deselected files will be auto-deleted after uploading based on current requirements
 
     # Initialize Supabase client
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -255,9 +250,9 @@ def submit_requirement_files_supabase():
                         # File exists, get existing URL and skip upload
                         file_url = supabase.storage.from_('requirements-odr').get_public_url(file_path_in_bucket)
                         saved_files.append({"requirement_id": requirement_id, "file_path": file_url})
-                        print("already exists in supabase, skipping upload")
+                        #print("already exists in supabase, skipping upload")
                         continue
-                    
+
                 except Exception as e:
                     print(f"Error checking file existence: {e}")
                     # Proceed to upload if check fails
@@ -273,25 +268,32 @@ def submit_requirement_files_supabase():
                     print(f"Error uploading file {filename} to Supabase: {e}")
                     return jsonify({"success": False, "notification": f"Failed to upload {filename}."}), 500
 
-    if not saved_files:
-        # Nothing new to save, return success
-        return jsonify({"success": True, "notification": "All files already uploaded, nothing to save."}), 200
-
-    # Clean up extra files in Supabase folder
+    # Clean up extra files in Supabase folder and DB (always run, regardless of new uploads)
     try:
         files_list = supabase.storage.from_('requirements-odr').list(path=request_id)
+        #print(f"Files in Supabase for {request_id}: {[f['name'] for f in files_list]}")
         current_requirement_ids = {req.get("requirement_id") for req in requirements}
+        #print(f"Current requirement IDs: {current_requirement_ids}")
         for file_info in files_list:
             file_name = file_info['name']
             # Extract requirement_id from file name (e.g., REQ0001_filename.ext -> REQ0001)
             if '_' in file_name:
                 req_id_from_file = file_name.split('_')[0]
+                #print(f"Checking file {file_name}, req_id_from_file: {req_id_from_file}")
                 if req_id_from_file not in current_requirement_ids:
-                    # Delete the extra file
+                    print(f"Deleting extra file: {file_name}")
+                    # Delete the extra file from Supabase
                     supabase.storage.from_('requirements-odr').remove([f"{request_id}/{file_name}"])
+                    # Delete from DB if exists
+                    Request.delete_requirement_file(request_id, req_id_from_file)
+                
     except Exception as e:
         print(f"Error cleaning up extra files: {e}")
         # Continue even if cleanup fails
+
+    if not saved_files:
+        # Nothing new to save, but cleanup done, return success
+        return jsonify({"success": True, "notification": "All files already uploaded, cleanup completed."}), 200
 
     # Store newly uploaded requirement files to DB
     success, message = Request.store_requirement_files(request_id, saved_files)
