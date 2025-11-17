@@ -7,7 +7,7 @@ import FileCard from "../../../components/common/FileCard";
 import RequestPopup from "../../../components/user/RequestPopup";
 import SearchBar from "../../../components/common/SearchBar";
 
-function Documents({ selectedDocs, setSelectedDocs, onNext }) {
+function Documents({ selectedDocs, setSelectedDocs, onNext, steps, currentStepIndex }) {
   const [documents, setDocuments] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -95,6 +95,20 @@ function Documents({ selectedDocs, setSelectedDocs, onNext }) {
 
           <div className="bottom-section" id="documents-section">
             <h1 className="title">Select Your Documents</h1>
+            {/* Progress Indicator for Documents page */}
+            <div className="request-progress-container">
+              <div className="request-progress-bar">
+                {steps.map((stepInfo, index) => (
+                  <div
+                    key={stepInfo.key}
+                    className={`progress-step ${index <= currentStepIndex ? 'active' : ''} ${index < currentStepIndex ? 'completed' : ''}`}
+                  >
+                    <div className="step-circle">{index + 1}</div>
+                    <div className="step-label">{stepInfo.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="user-searchbar-container">
               <SearchBar onChange={setSearchTerm} />
             </div>

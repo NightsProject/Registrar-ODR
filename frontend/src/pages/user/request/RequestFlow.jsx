@@ -102,26 +102,30 @@ function RequestFlow() {
 
   return (
     <>
-      {/* Progress Indicator */}
-      <div className="request-progress-container">
-        <div className="request-progress-bar">
-          {steps.map((stepInfo, index) => (
-            <div
-              key={stepInfo.key}
-              className={`progress-step ${index <= currentStepIndex ? 'active' : ''} ${index < currentStepIndex ? 'completed' : ''}`}
-            >
-              <div className="step-circle">{index + 1}</div>
-              <div className="step-label">{stepInfo.label}</div>
-            </div>
-          ))}
+      {/* Progress Indicator - only for non-documents steps */}
+      {step !== "documents" && (
+        <div className="request-progress-container">
+          <div className="request-progress-bar">
+            {steps.map((stepInfo, index) => (
+              <div
+                key={stepInfo.key}
+                className={`progress-step ${index <= currentStepIndex ? 'active' : ''} ${index < currentStepIndex ? 'completed' : ''}`}
+              >
+                <div className="step-circle">{index + 1}</div>
+                <div className="step-label">{stepInfo.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {step === "documents" && (
         <Documents
           selectedDocs={selectedDocs}
           setSelectedDocs={setSelectedDocs}
           onNext={handleDocumentsNext}
+          steps={steps}
+          currentStepIndex={currentStepIndex}
         />
       )}
 
