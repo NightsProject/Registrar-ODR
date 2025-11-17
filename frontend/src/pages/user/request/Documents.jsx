@@ -22,6 +22,7 @@ function Documents({ selectedDocs, setSelectedDocs, onNext }) {
   useEffect(() => {
     fetch("/api/request", {
       method: "GET",
+      cache: "no-store",
       headers: {
         "X-CSRF-TOKEN": getCSRFToken(),
       },
