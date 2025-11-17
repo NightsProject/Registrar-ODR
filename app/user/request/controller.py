@@ -392,16 +392,18 @@ def complete_request():
         Request.mark_request_complete(request_id, total_price)
 
         # Clear request_id from session to allow new requests
-        session.clear()
-
-        #Todo send details include: request id to preferred contact
-        #Todo delete the jwt session and other session variables
-
-        return jsonify({
+        response = jsonify({
             "success": True,
             "request_id": request_id,
             "notification": "Your request has been completed successfully."
-        }), 200
+        })
+        session.clear()
+        response.delete_cookie('session')
+        unset_jwt_cookies(response)
+
+        #Todo send details include: request id to preferred contact
+
+        return response, 200
     except Exception as e:
         print(f"Error in /api/submit-request: {e}")
         return jsonify({

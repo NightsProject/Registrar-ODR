@@ -25,9 +25,9 @@ def create_app(test_config=None):
     
     
     #in production
-    #app = Flask(__name__, instance_relative_config=True, static_folder="static/react", template_folder="templates")
+    app = Flask(__name__, instance_relative_config=True, static_folder="static/react", template_folder="templates")
 
-    app = Flask(__name__, instance_relative_config=True)
+    #app = Flask(__name__, instance_relative_config=True)
     
     
     # =====================
@@ -126,7 +126,7 @@ def create_app(test_config=None):
     def serve_react(path):
         if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
             return send_from_directory(app.static_folder, path)
-        return render_template("index.html")
+        return send_from_directory(app.static_folder, "index.html")
     
     register_error_handlers(app)
     return app
