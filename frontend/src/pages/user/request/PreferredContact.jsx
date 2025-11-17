@@ -105,7 +105,7 @@ function PreferredContact({ preferredContactInfo = {}, setPreferredContactInfo, 
                 onChange={() => setSelectedMethod("Email")}
                 disabled={loadingContact || savingContact}
               />
-              Email <em className="contact-detail">{contactInfo.email || "test@gmail.com"}</em>
+              Email <em className="contact-detail">{contactInfo.email || "Not provided"}</em>
             </label>
           </div>
 
@@ -119,7 +119,7 @@ function PreferredContact({ preferredContactInfo = {}, setPreferredContactInfo, 
                 onChange={() => setSelectedMethod("SMS")}
                 disabled={loadingContact || savingContact}
               />
-              SMS <em className="contact-detail">{contactInfo.contact_number || "09123456789"}</em>
+              SMS <em className="contact-detail">{contactInfo.contact_number || "Not provided"}</em>
             </label>
           </div>
 

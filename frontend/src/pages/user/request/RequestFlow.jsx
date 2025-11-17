@@ -12,6 +12,18 @@ function RequestFlow() {
   const [selectedDocs, setSelectedDocs] = useState([]);
   const [trackingId, setTrackingId] = useState("");
 
+  // Progress indicator steps
+  const steps = [
+    { key: "documents", label: "Select Documents" },
+    { key: "requestList", label: "Review Request" },
+    { key: "uploadRequirements", label: "Upload Files" },
+    { key: "preferredContact", label: "Contact Method" },
+    { key: "summary", label: "Review & Submit" },
+    { key: "submitRequest", label: "Complete" }
+  ];
+
+  const currentStepIndex = steps.findIndex(s => s.key === step);
+
   // the request id is obtained through session
 
   // State to hold data from each step for final submission
@@ -90,6 +102,21 @@ function RequestFlow() {
 
   return (
     <>
+      {/* Progress Indicator */}
+      <div className="request-progress-container">
+        <div className="request-progress-bar">
+          {steps.map((stepInfo, index) => (
+            <div
+              key={stepInfo.key}
+              className={`progress-step ${index <= currentStepIndex ? 'active' : ''} ${index < currentStepIndex ? 'completed' : ''}`}
+            >
+              <div className="step-circle">{index + 1}</div>
+              <div className="step-label">{stepInfo.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {step === "documents" && (
         <Documents
           selectedDocs={selectedDocs}
