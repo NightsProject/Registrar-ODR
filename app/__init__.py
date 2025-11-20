@@ -105,6 +105,9 @@ def create_app(test_config=None):
     app.register_blueprint(document_management_blueprint)
     from .admin.logging import logging_bp as logging_blueprint
     app.register_blueprint(logging_blueprint)
+    from .admin.manage_request import manage_request_bp as manage_request_blueprint
+    app.register_blueprint(manage_request_blueprint)
+
     
     #USER BLUEPRINTS
     from .user.authentication import authentication_user_bp as auth_user_blueprint

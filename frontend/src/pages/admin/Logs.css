@@ -1,6 +1,6 @@
-.header{
+.logs-header{
     font-family: var(--font-family-base);
 }
-.placeholder{
+.logs-placeholder{
     color: grey;
 }

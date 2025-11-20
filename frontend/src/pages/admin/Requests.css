@@ -1,6 +1,6 @@
-.header{
+.requests-header{
     font-family: var(--font-family-base);
 }
-.placeholder{
+.requests-placeholder{
     color: grey;
 }

@@ -13,10 +13,6 @@ function Index() {
         <li>
           <Link to="/admin/login">Admin Login</Link>
         </li>
-
-        <li>
-          <Link to="/admin/dashboard">Dashboard</Link>
-        </li>
       </ul>
     </div>
   );
