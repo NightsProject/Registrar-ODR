@@ -20,7 +20,7 @@ db_pool = None
 def create_app(test_config=None):
     
     #initialize the database (create tables if not exist)
-    #initialize_db()
+    initialize_db()
     load_dotenv()
     
     
@@ -106,6 +106,8 @@ def create_app(test_config=None):
     app.register_blueprint(logging_blueprint)
     from .admin.manage_request import manage_request_bp as manage_request_blueprint
     app.register_blueprint(manage_request_blueprint)
+    from .admin.settings import settings_bp as settings_blueprint
+    app.register_blueprint(settings_blueprint)
 
     
     #USER BLUEPRINTS
@@ -119,6 +121,10 @@ def create_app(test_config=None):
     app.register_blueprint(request_blueprint)
     from .user.tracking import tracking_bp as tracking_blueprint
     app.register_blueprint(tracking_blueprint)
+
+    #WHATSAPP BLUEPRINT
+    from .whatsapp import whatsapp_bp as whatsapp_blueprint 
+    app.register_blueprint(whatsapp_blueprint)           
 
     # === FRONTEND ROUTES (React) ===
     @app.route("/", defaults={"path": ""})

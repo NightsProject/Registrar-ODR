@@ -64,12 +64,7 @@
     color: var(--color-text-subtext);
     font-size: var(--font-size-subtext);
 }
-.input-wrapper{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 44px;
-}
+
 .box-input{
     background-color: var(--color-white);
     border-radius: 10px;

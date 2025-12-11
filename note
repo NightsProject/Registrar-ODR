@@ -1,0 +1,52 @@
+
+Request page
+    Authentication
+        Option 1: 
+            first name 
+            last name
+            family name (maiden name when enrolled in iit)
+        Option 2:
+            Student ID
+        Option 3:
+            Request for someone (needs authorization letter)
+
+    Choosing documents
+        Other requests in documents list in request flow
+
+    Summary page 
+        - Add a reminder to pay 
+        - Another reminder for cav requests should be first be paid
+    
+
+
+Tracking Page
+    remove student id on the tracking page
+
+    Rejected Status
+        -Subject to change
+
+ADmin DAshboard
+    Change Student column to CLient NAme
+
+    BIlling PAge
+        Running monthly payments
+            - all details should be reflected 
+
+        Total Payments
+
+Admin Types:
+    Type 1: Cater to requests 
+            - CAn prompt a message to the requester if the request being done is a double request
+
+    Type 2: Super Admin (can perform delete operation)
+
+    Type 3: Checks uploads, payments
+
+Logs
+    Filter feature(can show all the actions done by a particular admin)
+
+Payment
+    Add an admin fee for payment
+
+Note:
+    No payment for requesting a diploma

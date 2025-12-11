@@ -35,21 +35,6 @@ function ViewDocuments() {
       {loading && <LoadingSpinner message="Loading documents..." />}
       {!loading && (
         <div className="select-documents-page">
-          <div className="hero-section">
-            <img src="/assets/HeroImage.png" alt="Request" className="hero-image" />
-            <div className="welcome-text">
-              <h1>Welcome to the Online Document Request System</h1>
-              <p className="subtext">
-                Explore all available documents you can request and see what requirements are needed for each.
-                <br />
-                Make sure you have the required materials ready before starting your request.
-              </p>
-            </div>
-            <a href="#documents-section" className="view-documents-btn">
-              View Documents
-            </a>
-          </div>
-
           <div className="bottom-section" id="documents-section">
             <h1 className="title">Available Documents</h1>
             <div className="user-searchbar-container">

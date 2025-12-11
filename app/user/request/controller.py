@@ -1,6 +1,7 @@
 from . import request_bp
-from flask import jsonify, request, session
-from app.utils.decorator import jwt_required_with_role
+from ...whatsapp.controller import send_whatsapp_message 
+from flask import jsonify, request, session, current_app
+from app.utils.decorator import jwt_required_with_role, request_allowed_required
 from flask_jwt_extended import get_jwt_identity, unset_jwt_cookies
 from .models import Request
 from app.user.document_list.models import DocumentList
@@ -11,17 +12,48 @@ from config import SUPABASE_URL, SUPABASE_ANON_KEY
 
 role = 'user'
 
+def send_whatsapp_tracking(phone, full_name, request_id):
+    template_name = "odr_request_submitted"
+    
+    components = [
+        {
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": str(full_name)},
+                {"type": "text", "text": str(request_id)}
+            ]
+        }
+    ]
+    
+    print(f"[Tracking Number] Attempting to send WhatsApp Tracking Number {request_id} to {phone}")
+    
+    result = send_whatsapp_message(phone, template_name, components)
+    
+    if "error" in result:
+        current_app.logger.error(f"WhatsApp send failed for Tracking Number to {phone}: {result['error']}")
+        return {"status": "failed", "message": "Failed to send Tracking Number via WhatsApp"}
+    
+    return {"status": "success"}
+@request_bp.route("/api/check-request-allowed", methods=["GET"])
+@request_allowed_required()
+def check_request_allowed():
+    """
+    Check if requesting is allowed at the current time.
+    If this function is reached, it means the decorator allowed it.
+    """
+    return jsonify({"allowed": True}), 200
+
 @request_bp.route("/api/request", methods=["GET"])
 @jwt_required_with_role(role)
+@request_allowed_required()
 def get_request_page_data():
     """
-    Step 1: Initialize the db with the student_id and request_id 
+    Step 1: Initialize the db with the student_id and request_id
             and Get student data from external DB then fill in the database
     Step 2: Get all available documents for request
     Step 3: Return JSON data to React
     """
     try:
-        
         # step 1: initialize the db
         request_id = session.get("request_id")
         
@@ -40,7 +72,11 @@ def get_request_page_data():
         student_data = Request.get_student_data(student_id)
 
         student_name = student_data.get("full_name")
+        session["student_name"] = student_name
+
         student_contact = student_data.get("contact_number")
+        session["student_contact"] = student_contact
+
         student_email = student_data.get("email")
         
         #Store student info in the database
@@ -70,16 +106,17 @@ def get_request_page_data():
 #submit requests
 @request_bp.route("/api/save-documents", methods=["POST"])
 @jwt_required_with_role(role)
+@request_allowed_required()
 def save_documents():
     """
     Accepts final submission data from React and processes the request.
     Returns a success or error notification based on processing outcome.
     """
-    
+
     """accepts data from react: document id, quantity"""
     data = request.get_json()
     request_id = session.get("request_id")
-    
+
     try:
         #store requested documents to db
         Request.store_requested_documents(
@@ -130,71 +167,10 @@ def get_requirements():
         "success": True,
         "requirements": result["requirements"]
     }), 200
-# submit requirement files
-# @request_bp.route("/api/save-file", methods=["POST"])
-# @jwt_required_with_role(role)
-# def submit_requirement_files():
-#     """
-#     Accepts requirement files from React, saves them to disk, and stores file paths to the database.
-#     Skips saving requirements that are already uploaded.
-#     Expected multipart/form-data format:
-#     - request_id: "R0000123"
-#     - requirements: JSON string like [
-#           {"requirement_id": "REQ0001", "alreadyUploaded": true},
-#           {"requirement_id": "REQ0002", "alreadyUploaded": false}
-#       ]
-#     - files: file uploads with keys like "file_REQ0001", "file_REQ0002"
-#     """
-#     request_id = session.get("request_id")
-#     requirements_json = request.form.get("requirements")
-#     if not requirements_json:
-#         return jsonify({"success": False, "notification": "No requirements provided."}), 400
-
-#     try:
-#         import json
-#         requirements = json.loads(requirements_json)
-#     except json.JSONDecodeError:
-#         return jsonify({"success": False, "notification": "Invalid requirements format."}), 400
-
-#     upload_dir = os.path.join(os.getcwd(), 'uploads', request_id)
-#     os.makedirs(upload_dir, exist_ok=True)
-
-#     saved_files = []
-#     for req in requirements:
-#         requirement_id = req.get("requirement_id")
-#         already_uploaded = req.get("alreadyUploaded", False)
-
-#         # Skip saving if already uploaded
-#         if already_uploaded:
-#             continue
-
-#         file_key = f"file_{requirement_id}"
-#         if file_key in request.files:
-#             file = request.files[file_key]
-#             if file.filename:
-#                 filename = secure_filename(file.filename)
-#                 file_path = os.path.join(upload_dir, f"{requirement_id}_{filename}")
-
-#                 # Delete existing files for this requirement_id
-#                 for existing_file in os.listdir(upload_dir):
-#                     if existing_file.startswith(f"{requirement_id}_"):
-#                         os.remove(os.path.join(upload_dir, existing_file))
-
-#                 file.save(file_path)
-#                 saved_files.append({"requirement_id": requirement_id, "file_path": file_path})
-
-#     if not saved_files:
-#         # Nothing new to save, return success
-#         return jsonify({"success": True, "notification": "All files already uploaded, nothing to save."}), 200
-
-#     # Store newly uploaded requirement files to DB
-#     success, message = Request.store_requirement_files(request_id, saved_files)
-#     status_code = 200 if success else 400
-#     return jsonify({"success": success, "notification": message}), status_code
-
 
 @request_bp.route("/api/save-file-supabase", methods=["POST"])
 @jwt_required_with_role(role)
+@request_allowed_required()
 def submit_requirement_files_supabase():
     """
     Accepts requirement files from React, uploads them to Supabase S3, and stores file URLs to the database.
@@ -386,9 +362,13 @@ def set_preferred_contact():
 def complete_request():
 
     request_id = session.get("request_id")
+    phone = session.get("student_contact")
+    full_name = session.get("student_name")
     total_price = request.get_json().get("total_price", 0.0)
 
     try:
+        send_whatsapp_tracking(phone, full_name, request_id)
+
         Request.mark_request_complete(request_id, total_price)
 
         # Clear request_id from session to allow new requests
@@ -427,6 +407,3 @@ def logout_user():
 
     # Delete the session cookie to fully clear the session
     response.delete_cookie('session')
-
-    print("[INFO] Session and JWT cleared successfully.")
-    return response, 200

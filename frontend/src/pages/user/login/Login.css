@@ -1,3 +1,70 @@
+.option-item{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: 40px;
+    gap: 16px;
+
+    width: 150px;
+    height: 150px;
+
+    background: var(--color-white);
+    box-shadow: 2px 4px 12px #00000014;
+    border-radius: 20px;
+
+    animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+    transition: all 0.3s ease-in-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.option-item > * {
+  animation: fadeInContent 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s backwards;
+}
+
+@keyframes fadeInContent {
+  from {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.option-item:hover {
+  transform: scale(1.05);
+  cursor: pointer;
+}
+
+.Login-page .error-text{
+  width: 100%;
+  text-align: right;
+  width: 100%;
+}
+
+.Login-page h5{
+    text-align: center;
+    margin-bottom: 10px;
+    margin-top: 0px;
+}
+
+.Login-page .subtext{
+    text-align: center; 
+}
+
 .text-section{
     display: flex;
     flex-direction: column;
@@ -19,14 +86,36 @@
     gap: 8px;
 }
 
+.option-item .title{
+  font-size: 16px;
+  text-align: left;
+}
+
 .box-input{
+    text-align: left;
+}
+
+#otp-code-input{
     text-align: center;
+}
+
+.id-input-wrapper{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.id-input-wrapper .box-input{
+  text-align: center;
 }
 
 .error-section{
     display: flex;
     justify-content: center;
-    height: 8px;
+    flex-direction: column;
+    gap: 4px;
+    height: 10px;  
     width: 100%;
 }
 
@@ -35,6 +124,13 @@
     font-size: 10px;
     text-align: center;
     margin: 0px;
+}
+
+.upload-section{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 16px;
 }
 
 .action-section{

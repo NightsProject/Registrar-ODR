@@ -9,8 +9,20 @@ import { getCSRFToken } from "../../../utils/csrf";
 
 function RequestFlow() {
   const [step, setStep] = useState("documents");
-  const [selectedDocs, setSelectedDocs] = useState([]);
+  const [selectedDocs, setSelectedDocs] = useState([]); // Initialize as empty, will be populated on mount in RequestList
   const [trackingId, setTrackingId] = useState("");
+
+  // Progress indicator steps
+  const steps = [
+    { key: "documents", label: "Select Documents" },
+    { key: "requestList", label: "Review Request" },
+    { key: "uploadRequirements", label: "Upload Files" },
+    { key: "preferredContact", label: "Contact Method" },
+    { key: "summary", label: "Review & Submit" },
+    { key: "submitRequest", label: "Complete" }
+  ];
+
+  const currentStepIndex = steps.findIndex(s => s.key === step);
 
   // the request id is obtained through session
 
@@ -18,6 +30,7 @@ function RequestFlow() {
   const [uploadedFiles, setUploadedFiles] = useState({}); // e.g. { req_id: File | string (server path) | null }
   const [preferredContactInfo, setPreferredContactInfo] = useState({});
   const [contactInfo, setContactInfo] = useState({ email: "", contact_number: "" });
+  const [quantities, setQuantities] = useState({}); // e.g. { doc_id: quantity }
 
   // Step navigation handlers
   const goNextStep = () => {
@@ -71,7 +84,7 @@ function RequestFlow() {
   };
 
   // Handle Next from RequestList with updated docs (including quantity)
-  const handleRequestListProceed = (updatedDocs) => {
+  const handleRequestListProceed = (updatedDocs, updatedQuantities) => {
     // Compute deselected requirements based on previous selectedDocs
     const prevReqIds = new Set();
     selectedDocs.forEach(doc => {
@@ -83,24 +96,49 @@ function RequestFlow() {
       }
     });
     // Actually, better to compute deselected in UploadRequirements based on current requirementsList vs uploadedFiles
-    // So no need to compute here, just update selectedDocs
+    // So no need to compute here, just update selectedDocs and quantities
     setSelectedDocs(updatedDocs);
+    setQuantities(updatedQuantities);
     goNextStep();
   };
 
   return (
     <>
+      {/* Progress Indicator - only for non-documents steps */}
+      {step !== "documents" && (
+        <div className="request-progress-container">
+          <div className="request-progress-bar">
+            {steps.map((stepInfo, index) => (
+              <div
+                key={stepInfo.key}
+                className={`progress-step ${index <= currentStepIndex ? 'active' : ''} ${index < currentStepIndex ? 'completed' : ''}`}
+              >
+                <div className="step-circle">
+                  {index < currentStepIndex ? '✓' : index + 1}
+                </div>
+                <div className="step-label">{stepInfo.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {step === "documents" && (
         <Documents
           selectedDocs={selectedDocs}
           setSelectedDocs={setSelectedDocs}
           onNext={handleDocumentsNext}
+          steps={steps}
+          currentStepIndex={currentStepIndex}
         />
       )}
 
       {step === "requestList" && (
         <RequestList
           selectedDocs={selectedDocs}
+          setSelectedDocs={setSelectedDocs}
+          quantities={quantities}
+          setQuantities={setQuantities}
           onBack={goBackStep}
           onProceed={handleRequestListProceed}
         />

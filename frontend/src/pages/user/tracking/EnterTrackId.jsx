@@ -87,7 +87,7 @@ function EnterTrackId({ onNext }) {
     }, [shake]);
 
     return (
-        <div className="Track-page">
+        <div className="track-page">
             {loading && <LoadingSpinner message="Tracking request..." />}
             {flashMessage && (
                 <FlashMessage
@@ -102,7 +102,6 @@ function EnterTrackId({ onNext }) {
             </div>
 
             <div className="input-section">
-                <div className="inputs-container">
                     <div className="input-wrapper">
                         <p className="subtext">Tracking Number</p>
                         <input
@@ -126,10 +125,7 @@ function EnterTrackId({ onNext }) {
                             disabled={loading}
                         />
                     </div>
-                </div>
-                <div className="error-section">
                     {error && <p className={`error-text ${shake ? "shake" : ""}`}>{error}</p>}
-                </div>
             </div>
 
             <div className="action-section">

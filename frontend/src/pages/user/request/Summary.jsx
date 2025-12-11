@@ -14,8 +14,12 @@ function Summary({
 }) {
   const [completing, setCompleting] = useState(false);
 
-  // Calculate total price
-  const totalPrice = selectedDocs.reduce((sum, doc) => sum + (doc.cost * doc.quantity || 0), 0);
+  // Calculate total price - ensure doc.cost is used correctly
+  const totalPrice = selectedDocs.reduce((sum, doc) => {
+    const cost = doc.cost || 0;
+    const quantity = doc.quantity || 1;
+    return sum + (cost * quantity);
+  }, 0);
 
   const handleComplete = () => {
     setCompleting(true);

@@ -97,20 +97,18 @@ def ready_requirements_table():
    """
    execute_query(query)
 
-
-
-
 def ready_documents_table():
-   query = """
-   CREATE TABLE IF NOT EXISTS documents (
-       doc_id VARCHAR(10) PRIMARY KEY,
-       doc_name VARCHAR(255) NOT NULL,
-       description VARCHAR(255),
-       logo_link VARCHAR(255),
-       cost NUMERIC(10,2) DEFAULT 0.00 
-   )
-   """
-   execute_query(query)
+    query = """
+    CREATE TABLE IF NOT EXISTS documents (
+        doc_id VARCHAR(10) PRIMARY KEY,
+        doc_name VARCHAR(255) NOT NULL,
+        description VARCHAR(255),
+        logo_link VARCHAR(255),
+        cost NUMERIC(10,2) DEFAULT 0.00,
+        hidden BOOLEAN DEFAULT FALSE
+    )
+    """
+    execute_query(query)
 
 
 #mapping table between documents and requirements
@@ -134,7 +132,7 @@ def ready_requests_table():
        contact_number VARCHAR(20),
        email VARCHAR(100),
        preferred_contact VARCHAR(50),
-       status VARCHAR(50) DEFAULT 'UNCONFIRMED' CHECK (status IN ('UNCONFIRMED', 'SUBMITTED', 'PENDING', 'IN-PROGRESS', 'DOC-READY', 'RELEASED', 'REJECTED')),
+       status VARCHAR(50) DEFAULT 'PENDING' CHECK (status IN ('UNCONFIRMED', 'SUBMITTED', 'PENDING', 'IN-PROGRESS', 'DOC-READY', 'RELEASED', 'REJECTED')),
        payment_status BOOLEAN DEFAULT FALSE,
        total_cost NUMERIC(10,2) DEFAULT 0.00,
        requested_at TIMESTAMP DEFAULT NOW(),
@@ -164,7 +162,7 @@ def ready_request_requirements_links_table():
    CREATE TABLE IF NOT EXISTS request_requirements_links (
        request_id VARCHAR(15) REFERENCES requests(request_id) ON DELETE CASCADE,
        requirement_id VARCHAR(10) REFERENCES requirements(req_id) ON DELETE CASCADE,
-       file_url VARCHAR(255) NOT NULL,
+       file_path VARCHAR(255) NOT NULL,
        uploaded_at TIMESTAMP DEFAULT NOW(),
        PRIMARY KEY (request_id, requirement_id)
    )
@@ -172,7 +170,42 @@ def ready_request_requirements_links_table():
    execute_query(query)
 
 
+def ready_logs_table():
+   query = """
+   CREATE TABLE IF NOT EXISTS logs (
+       log_id SERIAL PRIMARY KEY,
+       admin_id VARCHAR(100) NOT NULL,
+       action VARCHAR(255) NOT NULL,
+       details TEXT,
+       timestamp TIMESTAMP DEFAULT NOW()
+   )
+   """
+   execute_query(query)
 
+
+def ready_admins_table():
+   query = """
+   CREATE TABLE IF NOT EXISTS admins (
+       email VARCHAR(100) PRIMARY KEY,
+       role VARCHAR(50) NOT NULL
+   )
+   """
+   execute_query(query)
+
+
+def ready_open_request_restriction_table():
+   query = """
+   CREATE TABLE IF NOT EXISTS open_request_restriction (
+       id SERIAL PRIMARY KEY,
+       start_time TIME NOT NULL,
+       end_time TIME NOT NULL,
+       available_days JSONB NOT NULL
+   )
+   """
+   execute_query(query)
+
+    
+ 
 
 # ==========================
 # SAMPLE DATA (OPTIONAL)
@@ -335,7 +368,10 @@ def initialize_db():
    ready_requests_table()
    ready_request_documents_table()
    ready_request_requirements_links_table()
-   insert_sample_data()
+   ready_logs_table()
+   ready_admins_table()
+   ready_open_request_restriction_table()
+   #insert_sample_data()
    print("Database and tables initialized successfully.")
 
 

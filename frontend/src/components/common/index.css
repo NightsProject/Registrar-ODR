@@ -13,6 +13,8 @@
     --color-button-primary-hover: #80A2FF;
     --color-button-destructive-default: #EA3D2F;
     --color-button-destructive-hover: #FEE4E3;
+    --color-button-success-default: #4ADE80;
+    --color-button-success-hover: #BBF7D1;
     --color-button-disabled: #E3E3E1;
 
     /* Shadow Colors when hovered */

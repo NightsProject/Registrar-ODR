@@ -100,7 +100,7 @@ function TrackStatus({ trackData, onBack, onViewDetails, onViewDeliveryInstructi
 
     if (!trackData) {
         return (
-            <div className="Track-page">
+            <div className="track-page">
                 <ContentBox>
                     <p>No tracking data available. Please go back and enter your details.</p>
                     <ButtonLink onClick={onBack} placeholder="Return" variant="primary" />
@@ -124,7 +124,7 @@ function TrackStatus({ trackData, onBack, onViewDetails, onViewDeliveryInstructi
     // data not found case
     if (!config) {
         return (
-            <div className="Track-page">
+            <div className="track-page">
                 <p>An unknown status was received. Please contact support.</p>
                 <ButtonLink onClick={onBack} placeholder="Return" variant="primary" />
             </div>

@@ -1,3 +1,7 @@
+.requirements-overlay {
+    background: rgba(0, 0, 0, 0.2);
+}
+
 .req-search-bar-wrapper {
     width: 100%;
     display: flex;

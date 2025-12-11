@@ -116,14 +116,21 @@ const RequestModal = ({ request, onClose, onDelete }) => {
               <thead>
                 <tr>
                   <th>Requirement</th>
-                  <th>File Path</th>
+                  <th>View Document</th>
                 </tr>
               </thead>
               <tbody>
                 {request.uploaded_files.map((file, index) => (
                   <tr key={index}>
                     <td>{file.requirement}</td>
-                    <td>{file.file_path}</td>
+                    <td>
+                      <button
+                        onClick={() => window.open(file.file_path, '_blank')}
+                        className="request-modal-view-button"
+                      >
+                        View
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

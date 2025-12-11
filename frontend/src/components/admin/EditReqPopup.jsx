@@ -7,21 +7,24 @@ function EditReqPopup({ onClose, onSave, requirement }) {
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       setError("Requirement name cannot be empty");
       setShake(true);
       return;
     }
-    onSave(requirement.req_id, name.trim());
+    try {
+      // Call parent onSave and await for result if it's async
+      await onSave(requirement.req_id, name.trim());
+      // If save succeeds, close popup
+      onClose();
+    } catch (err) {
+      // If backend returns duplicate name
+      setError(err.message || "Requirement name already exists");
+      setShake(true);
+    }
   };
 
-  useEffect(() => {
-    if (shake) {
-      const timer = setTimeout(() => setShake(false), 400);
-      return () => clearTimeout(timer);
-    }
-  }, [shake]);
 
   return (
     <div className="delete-req-overlay">

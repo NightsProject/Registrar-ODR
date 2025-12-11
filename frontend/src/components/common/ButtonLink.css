@@ -45,6 +45,20 @@
   text-decoration: none;
 }
 
+.button-link.success {
+  background-color: var(--color-button-success-default);
+  color: var(--color-white);
+  border: 2px solid var(--color-button-success-default);
+}
+
+.button-link.success:hover {
+  background-color: var(--color-button-success-hover);
+  color: var(--color-white);
+  border: 2px solid var(--color-button-success-hover);
+  text-decoration: none;
+}
+
+
 .button-link.primary:disabled,
 .button-link.secondary:disabled {
   background-color: var(--color-button-disabled);

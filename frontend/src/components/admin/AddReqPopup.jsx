@@ -14,8 +14,14 @@ function AddReqPopup({ onClose, onSave }) {
       return;
     }
 
-    if (onSave) onSave(name);
-    setName(""); // clear input after save
+    try {
+      if (onSave) await onSave(name); // onSave should throw if duplicate
+      setName("");
+      onClose();   
+    } catch (err) {
+      setError(err.message || "Requirement name already exists"); // show duplicate
+      setShake(true);
+    }
   };
 
   // Reset shake after animation

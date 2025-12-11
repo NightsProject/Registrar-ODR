@@ -15,6 +15,37 @@
 
 }
 
+
+.requirements-popup .button-section{
+    justify-content: flex-end;
+}
+
+.toolbar-actions{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+}
+
+.manage-requirements-button {
+    padding: 10px 20px;
+    background-color: var(--color-white);
+    color: var(--color-black);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    height: 48px;
+    box-shadow: 2px 4px 12px #00000014;
+    font-weight: bold;
+    font-size: var(--font-size-regular);
+    font-family: var(--font-family-base);
+}
+
+.manage-requirements-button:hover {
+    color: var(--color-button-primary-hover);
+}
+
 .file-cards-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(262px, 1fr));

@@ -1,3 +1,5 @@
+// frontend\src\pages\user\OtpVerification.jsx
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./login/Login.css";
@@ -27,14 +29,14 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
       const response = await fetch("/user/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", 
-        body: JSON.stringify({ student_id: studentId, otp: otpCode })
+        credentials: "include",
+        body: JSON.stringify({ student_id: studentId, otp: otpCode }) 
       });
 
       const data = await response.json();
-      
+
       console.log("Verify OTP response:", data);
-      
+
       if (!response.ok || data.valid === false) {
         return triggerError(data.message || "Invalid OTP code. Try again.");
       }
@@ -68,7 +70,7 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
       const data = await response.json();
 
       if (data.status !== "resent") {
-        throw new Error(data.message || "Failed to resend OTP.");
+        throw new Error(data.message || "Failed to resend OTP via WhatsApp.");
       }
 
       setMaskedPhone(data.masked_phone);
@@ -127,7 +129,7 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
         <div className="text-section">
           <h3 className="title">Enter 6-Digit Code</h3>
           <div className="subtext">
-            <p>We've sent an OTP to your registered mobile number</p>
+            <p>We've sent an OTP via WhatsApp to your registered mobile number</p>
             {maskedPhone &&
               <p>ending in **{maskedPhone}.</p>
             }
@@ -138,7 +140,7 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
           <p className="subtext">6-Digit Code</p>
           <div className="input-wrapper">
           <input
-            id="Code"
+            id="otp-code-input"
             type="numeric"
             className={`box-input ${error ? "input-error" : ""} ${shake ? "shake" : ""}`}
             placeholder="000000"
@@ -149,9 +151,7 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
             maxLength={6}
           />
           </div>
-          <div className="error-section">
-            {error && <p className={`error-text ${shake ? "shake" : ""}`}>{error}</p>}
-          </div>
+          {error && <p className={`error-text ${shake ? "shake" : ""}`}>{error}</p>}
         </div>
 
         <div className="action-section">
@@ -162,15 +162,15 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
 
           <div className="support-section">
             <p className="subtext">Didn't receive the code?</p>
-            <button 
-              className="forgot-id-link" 
-              onClick={handleResendOtp} 
+            <button
+              className="forgot-id-link"
+              onClick={handleResendOtp}
               disabled={resending || counter > 0}
             >
-              {resending 
-                ? "Resending..." 
-                : counter > 0 
-                  ? `Resend in ${counter}s` 
+              {resending
+                ? "Resending..."
+                : counter > 0
+                  ? `Resend in ${counter}s`
                   : "Resend OTP"}
             </button>
           </div>

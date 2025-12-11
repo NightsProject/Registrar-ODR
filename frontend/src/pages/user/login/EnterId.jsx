@@ -5,19 +5,16 @@ import ContentBox from "../../../components/user/ContentBox";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 
-function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone, setOtp}) {
+function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone, goBackToOptions, setOtp }) {
     const [studentId, setStudentId] = useState("");
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Clear any existing sessions on component mount
     useEffect(() => {
-        // Clear local and session storage
         localStorage.removeItem("jwtToken");
         sessionStorage.clear();
 
-        // Clear cookies
         document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         document.cookie = "access_token_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     }, []);
@@ -25,31 +22,24 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone, setOtp}) {
     const handleInputChange = (e) => {
     let value = e.target.value;
 
-    // Remove any character that's not a digit or dash
     value = value.replace(/[^0-9-]/g, "");
 
-    // Remove any dashes not at 5th position
     if (value.includes("-")) {
         const dashIndex = value.indexOf("-");
         if (dashIndex !== 4) {
         value = value.replace("-", "");
         }
-        // Remove additional dashes after the first valid one
         value = value.slice(0, 5) + value.slice(5).replace(/-/g, "");
     }
 
-    // Auto-insert dash after 4 digits if not present
     if (value.length > 4 && value[4] !== "-") {
         value = value.slice(0, 4) + "-" + value.slice(4);
     }
 
-    // Limit total length to 9 (8 digits + 1 dash)
     if (value.length > 9) value = value.slice(0, 9);
 
     setStudentId(value);
     };
-
-
 
     const handleSubmit = async () => {
         if (studentId.length === 0) {
@@ -124,19 +114,21 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone, setOtp}) {
                     <div className="input-section">
                         <p className="subtext">ID Number</p>
                         <div className="input-wrapper">
-                        <input
-                            id="student-id"
-                            type="text"
-                            className={`box-input ${error ? "input-error" : ""} ${shake ? "shake" : ""}`}
-                            placeholder="0000-0000"
-                            value={studentId}
-                            onChange={handleInputChange}
-                            maxLength={9}
-                            disabled={loading}
-                        />
-                        </div>
-                        <div className="error-section">
-                        {error && <p className={`error-text ${shake ? "shake" : ""}`}>{error}</p>}
+                            <div className="id-input-wrapper">
+                                <input
+                                    id="student-id"
+                                    type="text"
+                                    className={`box-input ${error ? "input-error" : ""} ${shake ? "shake" : ""}`}
+                                    placeholder="0000-0000"
+                                    value={studentId}
+                                    onChange={handleInputChange}
+                                    maxLength={9}
+                                    disabled={loading}
+                                />
+                            </div>
+                            <div className="error-section">
+                                {error && <p className={`error-text ${shake ? "shake" : ""}`}>{error}</p>}
+                            </div>
                         </div>
                     </div>
 
@@ -160,8 +152,8 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone, setOtp}) {
                         </div>
 
                         <div className="support-section">
-                            <p className="subtext">Forgot ID Number? Contact the </p>
-                            <a href="mailto:support@example.com" className="forgot-id-link">support.</a>
+                            <p className="subtext">Forgot ID Number?</p>
+                            <a onClick={goBackToOptions} className="forgot-id-link">Try Another Way</a>
                         </div>
                         </div>
                 </ContentBox>

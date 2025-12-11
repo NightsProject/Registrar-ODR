@@ -9,15 +9,14 @@ function Popup({ onClose, onSuccess, document }) {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
 
-// Keep both states:
-const [requirements, setRequirements] = useState([]); // names for the document
-const [selectedRequirements, setSelectedRequirements] = useState([]); // IDs from popup
-const [allRequirements, setAllRequirements] = useState([]); // fetched from DB
-
-
-
+  // Keep both states:
+  const [requirements, setRequirements] = useState([]); // names for the document
+  const [selectedRequirements, setSelectedRequirements] = useState([]); // IDs from popup
+  const [allRequirements, setAllRequirements] = useState([]); // fetched from DB
   const [showRequirementsPopup, setShowRequirementsPopup] = useState(false);
   const [shake, setShake] = useState(false);
+  const [initialState, setInitialState] = useState(null);
+
   const [errors, setErrors] = useState({
     docName: "",
     description: "",
@@ -25,6 +24,39 @@ const [allRequirements, setAllRequirements] = useState([]); // fetched from DB
     addRequirements: "",
     requirementsItem: [],
   });
+
+  const refreshRequirements = async () => {
+    try {
+      const res = await fetch("/admin/get-requirements");
+      if (!res.ok) throw new Error("Failed to fetch requirements");
+      const data = await res.json();
+      setAllRequirements(data);
+
+      // Update selected requirement names after refresh
+      const selectedNames = data
+        .filter((r) => selectedRequirements.includes(r.req_id))
+        .map((r) => r.requirement_name);
+      setRequirements(selectedNames);
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    setInitialState({
+      docName: document?.doc_name || "",
+      description: document?.description || "",
+      price: document?.cost?.toString() || "",
+      requirements: document?.requirements || [],
+      selectedRequirements: isEditMode
+        ? allRequirements
+            .filter((r) => document.requirements.includes(r.requirement_name))
+            .map((r) => r.req_id)
+        : [],
+    });
+  }, [isEditMode, document, allRequirements]);
+
 
   useEffect(() => {
   fetch("/admin/get-requirements")
@@ -40,7 +72,6 @@ const [allRequirements, setAllRequirements] = useState([]); // fetched from DB
       }
     });
 }, [isEditMode, document]);
-
 
   useEffect(() => {
   const selectedNames = allRequirements
@@ -65,10 +96,6 @@ const [allRequirements, setAllRequirements] = useState([]); // fetched from DB
       setRequirements(document.requirements || []);
     }
   }, [document, isEditMode]);
-
-  const handleAddRequirement = () => {
-    setRequirements([...requirements, ""]);
-  };
 
   const handleRequirementChange = (index, value) => {
     const updated = [...requirements];
@@ -283,7 +310,16 @@ const handleRemoveRequirement = (index) => {
           <div className="button-section">
             <div className="cancel-button-wrapper">
               <ButtonLink
-                onClick={onClose}
+                onClick={() => {
+                  if (initialState) {
+                    setDocName(initialState.docName);
+                    setDescription(initialState.description);
+                    setPrice(initialState.price);
+                    setRequirements(initialState.requirements);
+                    setSelectedRequirements(initialState.selectedRequirements);
+                  }
+                  onClose();
+                }}
                 placeholder="Cancel"
                 className="cancel-button"
                 variant="secondary"
@@ -299,20 +335,20 @@ const handleRemoveRequirement = (index) => {
             </div>
           </div>
         </div>
-        {showRequirementsPopup && (
-  <RequirementsPopup
-  onClose={() => setShowRequirementsPopup(false)}
-  selected={selectedRequirements}
-  setSelected={setSelectedRequirements}
-  onAddRequirement={(newReq) => setAllRequirements(prev => [newReq, ...prev])}
-/>
-)}
-
+       {showRequirementsPopup && (
+          <RequirementsPopup
+            onClose={() => {
+              setShowRequirementsPopup(false);
+              refreshRequirements(); // Refresh parent after closing popup
+            }}
+            selected={Array.isArray(selectedRequirements) ? selectedRequirements : []}
+            setSelected={setSelectedRequirements}
+            onAddRequirement={(newReq) => setAllRequirements(prev => [newReq, ...prev])}
+          />
+        )}
       </div>
     </div>
-    
   );
-  
 }
 
 export default Popup;

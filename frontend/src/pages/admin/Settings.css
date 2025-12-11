@@ -1,0 +1,260 @@
+/* Settings.css */
+
+/* --- General Layout and Containers --- */
+
+.settings-page {
+    padding: 20px;
+    background-color: #f8f9fa; 
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* --- 1. Admin Management Card --- */
+
+.admin-management-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Header Area: Title and Add Admin Button */
+.admin-management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+}
+
+.admin-management-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #343a40;
+    margin: 0;
+}
+
+.add-admin-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.add-admin-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Role Filter Tabs (Admin, Manager, Staff, etc.) */
+.filter-role-buttons {
+    display: flex;
+    gap: 5px;
+    padding: 0 30px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.filter-role-buttons button {
+    background: none;
+    border: none;
+    padding: 8px 15px;
+    font-size: 14px;
+    color: #6c757d;
+    cursor: pointer;
+    border-bottom: 2px solid transparent; 
+    transition: border-bottom-color 0.3s, color 0.3s;
+}
+
+.filter-role-buttons button.active {
+    color: #007bff;
+    font-weight: 600;
+    border-bottom-color: #007bff;
+}
+
+/* Admins Table */
+.admins-table-wrapper {
+    padding: 0;
+}
+
+.admins-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.admins-table thead {
+    background-color: #f8f9fa;
+}
+
+.admins-table th,
+.admins-table td {
+    padding: 12px 30px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 14px;
+}
+
+.admins-table th {
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.admins-table td:last-child {
+    border-right: none;
+}
+
+/* Role Dropdown Styling */
+.admins-table select {
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* Actions Column (Trash Can) */
+.actions-col {
+    width: 100px;
+    text-align: center !important; 
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 5px;
+}
+.delete-btn:hover {
+    color: #bd2130;
+}
+
+/* --- 2. Availability Settings Card --- */
+
+.availability-settings {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px 30px;
+}
+
+.availability-settings h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.availability-settings p {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+.availability-form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Time Configuration Row (Start Time & End Time side-by-side) */
+.time-config-row {
+    display: flex;
+    gap: 50px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.time-input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.time-input-group select {
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    background-color: #ffffff;
+    font-size: 14px;
+}
+
+.time-input-group span {
+    font-weight: bold;
+    color: #495057;
+}
+
+/* Available Days Styling */
+.days-group {
+    margin-top: 10px;
+}
+
+.days-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.day-checkbox {
+    /* Style for the day button (label) */
+    flex-grow: 1;
+    text-align: center;
+    padding: 10px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background-color 0.2s, color 0.2s;
+    background-color: #e9ecef; /* Unselected style (light grey) */
+    color: #495057;
+    min-width: 50px;
+}
+
+/* Style when the 'active' class is applied by React */
+.day-checkbox.active {
+    background-color: #007bff; /* Selected style (blue) */
+    color: white;
+}
+
+/* Update Settings Button */
+.update-button-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.update-settings-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.update-settings-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+}

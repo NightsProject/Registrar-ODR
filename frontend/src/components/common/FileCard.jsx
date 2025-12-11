@@ -6,16 +6,19 @@ function FileCard({
   onClick,
   onEdit,
   onDelete,
+  onHide,
   isAdmin = false,
   selectable = false,
   isSelected = false
 }) {
   const { doc_name, description, requirements = [], cost, logo_link } = document;
 
+  console.log(document.doc_name, document.hidden);
+
   return (
     <div className="card-container">
     <div
-      className={`file-card ${selectable ? "selectable" : ""} ${isSelected ? "selected" : ""}`}
+      className={`file-card ${selectable ? "selectable" : ""} ${isSelected ? "selected" : ""} ${document.hidden ? "hide" : ""}`}
       onClick={selectable ? () => onClick(document) : undefined}
     >
       {/* <div className="logo-section">
@@ -44,14 +47,27 @@ function FileCard({
 
         {isAdmin && (
           <div className="card-action-section">
-            <ButtonLink
-              text="Edit"
-              placeholder="Edit"
+
+            <button
+              className="edit-button"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(document);
               }}
-            />
+            >
+              <img src="/assets/EditIcon2.svg" alt="Edit" />
+            </button>
+
+            <button
+              className="hide-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onHide(document);
+              }}
+            >
+              <img src={`/${document.hidden ? "assets/EyeOffIcon.svg" : "assets/EyeIcon.svg"}`} alt="Hide" />
+            </button>
+
             <button
               className="delete-button"
               onClick={(e) => {
@@ -59,7 +75,7 @@ function FileCard({
                 onDelete(document);
               }}
             >
-              <img src="/assets/TrashWhite.svg" alt="Delete" />
+              <img src="/assets/TrashIcon.svg" alt="Delete" />
             </button>
           </div>
         )}

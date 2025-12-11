@@ -13,11 +13,13 @@ role = "admin"
 @jwt_required_with_role(role)
 def get_requests():
     """
-    Get all requests for admin management.
+    Get paginated requests for admin management.
     """
     try:
-        requests = ManageRequestModel.get_all_requests()
-        return jsonify({"requests": requests}), 200
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 20))
+        result = ManageRequestModel.get_all_requests(page=page, limit=limit)
+        return jsonify({"requests": result["requests"], "total": result["total"]}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -31,6 +33,7 @@ def update_request_status(request_id):
     try:
         data = request.get_json()
         new_status = data.get("status")
+        payment_status = data.get("payment_status")
         if not new_status:
             return jsonify({"error": "Status is required"}), 400
 
@@ -42,7 +45,7 @@ def update_request_status(request_id):
         # Get admin ID from JWT token
         admin_id = get_jwt_identity()
 
-        success = ManageRequestModel.update_request_status(request_id, new_status, admin_id)
+        success = ManageRequestModel.update_request_status(request_id, new_status, admin_id, payment_status)
         if success:
             return jsonify({"message": "Status updated successfully"}), 200
         else:
@@ -66,5 +69,21 @@ def delete_request(request_id):
             return jsonify({"message": "Request deleted successfully"}), 200
         else:
             return jsonify({"error": "Request not found or deletion failed"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@manage_request_bp.route("/api/admin/my-requests", methods=["GET"])
+@jwt_required_with_role(role)
+def get_my_requests():
+    """
+    Get paginated requests assigned to the logged-in admin.
+    """
+    try:
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 20))
+        admin_id = get_jwt_identity()
+        result = ManageRequestModel.get_assigned_requests(admin_id, page=page, limit=limit)
+        return jsonify({"requests": result["requests"], "total": result["total"]}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -73,14 +73,14 @@ def get_documents_with_requirements():
         conn = g.db_conn
         cursor = conn.cursor()
 
-        # Fetch all documents
-        cursor.execute("SELECT doc_id, doc_name, description, logo_link, cost FROM documents;")
+        # Fetch all documents - INCLUDING the hidden field
+        cursor.execute("SELECT doc_id, doc_name, description, logo_link, cost, hidden FROM documents;")
         documents = cursor.fetchall()
 
         document_list = []
 
         for doc in documents:
-            doc_id, doc_name, description, logo_link, cost = doc
+            doc_id, doc_name, description, logo_link, cost, hidden = doc
 
             # Fetch requirement names for this document
             cursor.execute("""
@@ -98,7 +98,8 @@ def get_documents_with_requirements():
                 "description": description,
                 "logo_link": logo_link,
                 "cost": float(cost),
-                "requirements": req_names
+                "requirements": req_names,
+                "hidden": hidden  
             })
 
         cursor.close()
@@ -287,6 +288,12 @@ def add_requirement():
 
         if not name or not name.strip():
             return jsonify({"error": "Requirement name cannot be empty"}), 400
+        
+        cursor.execute("SELECT req_id FROM requirements WHERE LOWER(requirement_name) = LOWER(%s);", (name.strip(),))
+        existing = cursor.fetchone()
+        if existing:
+            return jsonify({"error": "Requirement name already exists"}), 400
+
 
         # Generate new req_id
         cursor.execute("SELECT req_id FROM requirements ORDER BY req_id DESC LIMIT 1;")
@@ -311,7 +318,8 @@ def add_requirement():
 def check_req_exist(req_id):
     """
     Check if a requirement is linked to any requests.
-    Returns {"exists": true, "count": N} if linked, else {"exists": false, "count": 0}.
+    Returns {"exists": true, "count": N} if linked, 
+    else {"exists": false, "count": 0}.
     """
     try:
         conn = g.db_conn
@@ -327,6 +335,69 @@ def check_req_exist(req_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+
+@document_management_bp.route('/check-req/<string:req_id>', methods=['GET'])
+def check_req(req_id):
+    """
+    Check if a requirement is linked to any requests or documents.
+    Returns:
+    {
+        "in_requests": {"exists": true/false, "count": N},
+        "in_documents": {"exists": true/false, "count": N}
+    }
+    """
+    try:
+        conn = g.db_conn
+        cursor = conn.cursor()
+
+        # Check in requests
+        cursor.execute(
+            "SELECT COUNT(*) FROM request_requirements_links WHERE requirement_id = %s;",
+            (req_id,)
+        )
+        req_count = cursor.fetchone()[0]
+
+        # Check in documents
+        cursor.execute(
+            "SELECT COUNT(*) FROM document_requirements WHERE req_id = %s;",
+            (req_id,)
+        )
+        doc_count = cursor.fetchone()[0]
+
+        return jsonify({
+            "in_requests": {"exists": req_count > 0, "count": req_count},
+            "in_documents": {"exists": doc_count > 0, "count": doc_count}
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+@document_management_bp.route('/check-doc-exist/<string:doc_id>', methods=['GET'])
+def check_doc_exist(doc_id):
+    """
+    Check if a document is linked to any requests.
+    Returns {"exists": true, "count": N} if linked, else {"exists": false, "count": 0}.
+    """
+    try:
+        conn = g.db_conn
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM request_documents WHERE doc_id = %s;",
+            (doc_id,)
+        )
+        count = cursor.fetchone()[0]
+
+        return jsonify({"exists": count > 0, "count": count}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
     finally:
         cursor.close()
 
@@ -345,23 +416,83 @@ def edit_requirement(req_id):
         conn = g.db_conn
         cursor = conn.cursor()
 
-        # Check if requirement exists
+        # Check for duplicate name in other requirements
+        cursor.execute(
+            "SELECT req_id FROM requirements WHERE LOWER(requirement_name) = LOWER(%s) AND req_id != %s;",
+            (new_name.strip(), req_id)
+        )
+        duplicate = cursor.fetchone()
+        if duplicate:
+            return jsonify({"error": "Requirement name already exists"}), 400
+
+        # Check if the requirement exists
         cursor.execute("SELECT req_id FROM requirements WHERE req_id = %s;", (req_id,))
         existing = cursor.fetchone()
         if not existing:
             return jsonify({"error": f"Requirement {req_id} not found"}), 404
 
-        # Update requirement name
+        # Update the requirement name
         cursor.execute(
             "UPDATE requirements SET requirement_name = %s WHERE req_id = %s;",
             (new_name.strip(), req_id)
         )
         conn.commit()
 
-        return jsonify({"message": f"Requirement {req_id} updated successfully", "req_id": req_id, "requirement_name": new_name.strip()}), 200
+        return jsonify({
+            "message": f"Requirement {req_id} updated successfully",
+            "req_id": req_id,
+            "requirement_name": new_name.strip()
+        }), 200
 
     except Exception as e:
         conn.rollback()
         return jsonify({"error": str(e)}), 500
+
     finally:
         cursor.close()
+
+@document_management_bp.route('/hide-document/<string:doc_id>', methods=['PATCH'])
+def hide_document(doc_id):
+    try:
+        conn = g.db_conn
+        cursor = conn.cursor()
+
+        # Flip hidden flag to TRUE
+        cursor.execute("""
+            UPDATE documents
+            SET hidden = TRUE
+            WHERE doc_id = %s;
+        """, (doc_id,))
+
+        conn.commit()
+        return jsonify({"message": f"Document {doc_id} hidden successfully"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+
+@document_management_bp.route('/toggle-hide-document/<string:doc_id>', methods=['PATCH'])
+def toggle_hide_document(doc_id):
+    try:
+        conn = g.db_conn
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE documents
+            SET hidden = NOT hidden
+            WHERE doc_id = %s;
+        """, (doc_id,))
+
+        conn.commit()
+        return jsonify({"message": f"Document {doc_id} hidden status toggled successfully"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+

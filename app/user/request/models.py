@@ -413,3 +413,73 @@ class Request:
         finally:
             cur.close()
             db_pool.putconn(conn)
+
+    @staticmethod
+    def get_saved_documents(request_id):
+        """
+        Fetch saved documents and quantities for a given request_id.
+        Returns a list of dicts: [{"doc_id": "DOC0001", "doc_name": "...", "quantity": 1, "requirements": [...]}]
+        """
+        conn = db_pool.getconn()
+        cur = conn.cursor()
+
+        try:
+            query = """
+                SELECT rd.doc_id, d.doc_name, rd.quantity, ARRAY_AGG(r.requirement_name) as requirements
+                FROM request_documents rd
+                JOIN documents d ON rd.doc_id = d.doc_id
+                LEFT JOIN document_requirements dr ON rd.doc_id = dr.doc_id
+                LEFT JOIN requirements r ON dr.req_id = r.req_id
+                WHERE rd.request_id = %s
+                GROUP BY rd.doc_id, d.doc_name, rd.quantity
+                ORDER BY d.doc_name;
+            """
+            cur.execute(query, (request_id,))
+            rows = cur.fetchall()
+
+            documents = []
+            for row in rows:
+                doc_id, doc_name, quantity, reqs = row
+                requirements = reqs if reqs and reqs[0] is not None else []
+                documents.append({
+                    "doc_id": doc_id,
+                    "doc_name": doc_name,
+                    "quantity": quantity,
+                    "requirements": requirements
+                })
+
+            return documents
+
+        except Exception as e:
+            print(f"Error fetching saved documents for request {request_id}: {e}")
+            return []
+
+        finally:
+            cur.close()
+            db_pool.putconn(conn)
+
+    @staticmethod
+    def get_preferred_contact(request_id):
+        """
+        Fetch preferred contact for a given request_id.
+        Returns the preferred_contact string or None.
+        """
+        conn = db_pool.getconn()
+        cur = conn.cursor()
+
+        try:
+            cur.execute("""
+                SELECT preferred_contact
+                FROM requests
+                WHERE request_id = %s
+            """, (request_id,))
+            row = cur.fetchone()
+            return row[0] if row else None
+
+        except Exception as e:
+            print(f"Error fetching preferred contact for request {request_id}: {e}")
+            return None
+
+        finally:
+            cur.close()
+            db_pool.putconn(conn)

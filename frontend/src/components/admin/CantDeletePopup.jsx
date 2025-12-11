@@ -1,7 +1,7 @@
 import "./CantDeletePopup.css";
 import ButtonLink from "../common/ButtonLink";
 
-function CantDeletePopup({ onClose}) {
+function CantDeletePopup({onClose}) {
   return (
     <div className="cant-delete-overlay">
       <div className="cant-delete-popup">

@@ -3,6 +3,7 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import bgImage from "./assets/Motif.png";
 import logo from "./assets/MSUIITLogo.png";
+import myIITLogo from "./assets/myiit.gif"; 
 
 function AdminLogin() {
   const navigate = useNavigate();
@@ -25,7 +26,11 @@ function AdminLogin() {
 
       const data = await response.json();
       if (response.ok) {
-        navigate("/admin/dashboard");
+        if (data.redirect) {
+          navigate(data.redirect);
+        } else {
+          navigate("/admin/dashboard");
+        }
       } else {
         setError(data.error || "Login failed. Please try again.");
       }
@@ -44,14 +49,13 @@ function AdminLogin() {
   return (
     <GoogleOAuthProvider clientId={clientId}>
       <div className="min-h-screen flex items-center justify-center"
-      
         style={{ backgroundColor: "var(--color-primary)" }}>
         <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="flex flex-col md:flex-row min-h-[600px]">
             <div
               className="flex-1 relative bg-cover bg-center p-12 flex flex-col justify-between text-white"
               style={{
-                backgroundImage:`url(${bgImage})`,
+                backgroundImage: `url(${bgImage})`,
               }}
             >
               <div className="flex-1 flex flex-col justify-center mt-12">
@@ -76,7 +80,6 @@ function AdminLogin() {
               </div>
             </div>
 
-            {/* Right side - Login form */}
             <div className="flex-1 bg-white p-12 flex flex-col justify-center">
               <div className="w-full max-w-sm mx-auto space-y-8">
                 <div className="text-center space-y-2">
@@ -96,29 +99,46 @@ function AdminLogin() {
                   </div>
                 )}
 
-                {/* Google Login Button Container */}
+                {/* Custom myIIT Login Button*/}
                 <div className="flex flex-col items-center">
-                  <div className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 rounded-xl hover:border-gray-300 transition-colors">
-                    {isLoading ? (
-                      <div className="flex items-center gap-3 text-gray-600">
-                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        <span>Signing in...</span>
-                      </div>
-                    ) : (
+                  <div className="w-full relative">
+                    <button
+                      onClick={() => {
+                        // Trigger the hidden Google button
+                        document.getElementById('google-login-button')?.querySelector('div[role="button"]')?.click();
+                      }}
+                      disabled={isLoading}
+                      className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#B81D23'}
+                      onMouseLeave={(e) => e.currentTarget.style.borderColor = ''}
+                    >
+                      {isLoading ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          <span className="font-semibold text-base text-gray-700" style={{ fontFamily: "'Inter', sans-serif" }}>Signing in...</span>
+                        </>
+                      ) : (
+                        <>
+                          
+                          <span className="font-semibold text-base text-gray-700" style={{ fontFamily: "'Inter', sans-serif" }}>Continue with</span>
+                          <img src={myIITLogo} alt="myIIT" className="w-15 h-15 object-contain" />
+                        </>
+                      )}
+                    </button>
+
+                    <div id="google-login-button" className="absolute opacity-0 pointer-events-none">
                       <GoogleLogin onSuccess={onSuccess} onError={onFailure} />
-                    )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center border-gray-200 mb-6">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-0 mb-6">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                      </svg>
-                      <span>Secure authentication with Google</span>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mt-6 mb-6">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                    </svg>
+                    <span>Secure authentication with Google</span>
                   </div>
 
                   <div className="text-center">

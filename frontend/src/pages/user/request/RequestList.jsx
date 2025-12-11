@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Request.css";
 import { getCSRFToken } from "../../../utils/csrf";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
@@ -6,14 +6,60 @@ import ContentBox from "../../../components/user/ContentBox";
 import ButtonLink from "../../../components/common/ButtonLink";
 
 
-function RequestList({ selectedDocs = [], onBack, onProceed}) {
-  const initialQuantities = selectedDocs.reduce((acc, doc) => {
-    acc[doc.doc_id] = 1;
-    return acc;
-  }, {});
-
-  const [quantities, setQuantities] = useState(initialQuantities);
+function RequestList({ selectedDocs = [], setSelectedDocs, quantities = {}, setQuantities, onBack, onProceed}) {
   const [loading, setLoading] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(true);
+
+  // Fetch saved documents on mount and sync quantities
+  useEffect(() => {
+    let mounted = true;
+    const fetchSavedDocuments = async () => {
+      setSyncLoading(true);
+      try {
+        const res = await fetch("/api/get-saved-documents", {
+          method: "GET",
+          headers: { "X-CSRF-TOKEN": getCSRFToken() },
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!mounted) return;
+        if (data && data.success && Array.isArray(data.documents) && data.documents.length > 0) {
+          // Sync saved quantities with current selection
+          const savedQuantities = data.documents.reduce((acc, doc) => {
+            acc[doc.doc_id] = doc.quantity || 1;
+            return acc;
+          }, {});
+          setQuantities((prevQuantities) => ({ ...prevQuantities, ...savedQuantities }));
+        } else {
+          // No saved documents, initialize quantities from current selectedDocs if not already set
+          if (Object.keys(quantities).length === 0) {
+            const initialQuantities = selectedDocs.reduce((acc, doc) => {
+              acc[doc.doc_id] = 1;
+              return acc;
+            }, {});
+            setQuantities(initialQuantities);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching saved documents:", err);
+        // On error, initialize quantities from current selectedDocs if not already set
+        if (Object.keys(quantities).length === 0) {
+          const initialQuantities = selectedDocs.reduce((acc, doc) => {
+            acc[doc.doc_id] = 1;
+            return acc;
+          }, {});
+          setQuantities(initialQuantities);
+        }
+      } finally {
+        if (mounted) setSyncLoading(false);
+      }
+    };
+
+    fetchSavedDocuments();
+    return () => {
+      mounted = false;
+    };
+  }, [setSelectedDocs, selectedDocs, setQuantities]);
 
   const increaseQuantity = (docId) => {
     setQuantities((prev) => ({
@@ -75,13 +121,13 @@ function RequestList({ selectedDocs = [], onBack, onProceed}) {
 
     setLoading(false);
     if (success) {
-      onProceed(updatedDocs);
+      onProceed(updatedDocs, quantities);
     }
   };
 
   return (
     <>
-      {loading && <LoadingSpinner message="Saving documents..." />}
+      {(loading || syncLoading) && <LoadingSpinner message={syncLoading ? "Loading saved documents..." : "Saving documents..."} />}
 
       <ContentBox className="request-list">
         <div className="title-container">
@@ -146,7 +192,7 @@ function RequestList({ selectedDocs = [], onBack, onProceed}) {
             placeholder={loading ? "Saving..." : "Proceed"}
             onClick={handleProceed}
             variant="primary"
-            disabled={loading}
+            disabled={loading || syncLoading}
           />
         </div>
 

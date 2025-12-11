@@ -138,7 +138,7 @@ function UploadRequirements({
       Object.keys(next).forEach((k) => {
         if (!currentIds.has(String(k))) {
           // Remove the entry locally (clear local File or server path)
-          // Server deletion will happen on proceed
+          // Note: Server-side files will be cleaned up during upload process
           delete next[k];
         }
       });
