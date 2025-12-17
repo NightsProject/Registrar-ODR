@@ -266,7 +266,7 @@ function TrackFlow() {
                                         trackingNumber: payment.trackingNumber,
                                         amount: payment.amountDue,
                                         studentId: payment.studentId,
-                                        paymentReference: payment.checkoutId || checkout.id,
+                                        paymentReference: payment.id
                                     })
                                 });
                                 const body = await resp.json().catch(() => ({}));

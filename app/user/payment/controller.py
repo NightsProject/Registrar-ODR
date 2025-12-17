@@ -63,7 +63,7 @@ def maya_webhook():
         
         status = payload.get('status')
         tracking_number = payload.get('requestReferenceNumber') or payload.get('trackingNumber') or payload.get('metadata', {}).get('trackingNumber')
-        payment_id = payload.get('id')
+        payment_id = payload.get('receiptNumber') or payload.get('receipt', {}).get('receiptNo') or payload.get('id')
         amount = payload.get('totalAmount', {}).get('value')
         student_id = payload.get('studentId') or payload.get('metadata', {}).get('studentId')
         current_app.logger.info(f"[MAYA] Parsed fields -> status: {status}, tracking: {tracking_number}, amount: {amount}, student_id: {student_id}, payment_id: {payment_id}")
