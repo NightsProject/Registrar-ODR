@@ -216,6 +216,7 @@ def ready_request_requirements_links_table():
    execute_query(query)
 
 
+
 def ready_logs_table():
    query = """
    CREATE TABLE IF NOT EXISTS logs (
@@ -223,15 +224,37 @@ def ready_logs_table():
        admin_id VARCHAR(100) NOT NULL,
        action VARCHAR(255) NOT NULL,
        details TEXT,
-       timestamp TIMESTAMP DEFAULT NOW()
+       timestamp TIMESTAMP DEFAULT NOW(),
+       request_id VARCHAR(15) DEFAULT 'none',
+       log_level VARCHAR(20) DEFAULT 'INFO',
+       ip_address VARCHAR(45),
+       user_agent TEXT,
+       category VARCHAR(50) DEFAULT 'SYSTEM',
+       session_id VARCHAR(100),
+       created_at TIMESTAMP DEFAULT NOW()
    )
    """
    execute_query(query)
-   # Add request_id column if it doesn't exist
-   alter_query = """
-   ALTER TABLE logs ADD COLUMN IF NOT EXISTS request_id VARCHAR(15) DEFAULT 'none'
-   """
-   execute_query(alter_query)
+   
+   # Add performance indexes for the logs table
+   indexes = [
+       "CREATE INDEX IF NOT EXISTS idx_logs_log_level ON logs(log_level)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_category ON logs(category)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_session_id ON logs(session_id)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_admin_id ON logs(admin_id)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp DESC)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_action_text ON logs USING gin(to_tsvector('english', action || ' ' || COALESCE(details, '')))"
+   ]
+   
+   for index_query in indexes:
+       try:
+           execute_query(index_query)
+       except Exception as e:
+           print(f"Index creation warning for logs: {e}")
+   
+   # Update existing logs with default values
+   execute_query("UPDATE logs SET log_level = 'INFO', category = 'SYSTEM' WHERE log_level IS NULL OR category IS NULL")
 
 
 def ready_request_assignments_table():

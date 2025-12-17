@@ -8,6 +8,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from ..settings.models import Admin
 import secrets
+from app.services.logging_service import LoggingService
 
 # =========================
 # OAuth setup (will be initialized in create_app)
@@ -109,8 +110,9 @@ def get_admins():
     try:
         admins = Admin.get_all()
         return jsonify(admins), 200
+
     except Exception as e:
-        current_app.logger.error(f"Error fetching admins: {e}")
+        LoggingService.log_error("get_admins", f"Error fetching admins: {str(e)}")
         return jsonify({"error": "Failed to fetch admins"}), 500
 
 
@@ -125,10 +127,12 @@ def add_admin():
     if not email or not role:
         return jsonify({"error": "Email and role are required"}), 400
 
+
     if Admin.add(email, role):
-        current_app.logger.info(f"Admin {email} added with role {role}")
+        LoggingService.log_user_management("admin_created", email, f"Admin {email} added with role {role}")
         return jsonify({"message": "Admin added successfully"}), 201
     else:
+        LoggingService.log_error("add_admin", f"Failed to add admin {email} with role {role}")
         return jsonify({"error": "Failed to add admin"}), 500
 
 
