@@ -9,6 +9,7 @@ import CantDeletePopup from "./CantDeletePopup";
 import EditReqPopup from "./EditReqPopup";
 import CantEditPopup from "./CantEditPopup";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { getCSRFToken } from "../../utils/csrf";
 
 function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequirement, selectionMode = true}) {
  const [requirements, setRequirements] = useState([]);
