@@ -59,14 +59,28 @@ def maya_webhook():
             return jsonify({'error': 'Invalid signature'}), 401
         
         payload = request.get_json()
-        current_app.logger.info(f"[MAYA] Payload received: {payload}")
+        current_app.logger.info("="*80)
+        current_app.logger.info("[MAYA] FULL WEBHOOK PAYLOAD:")
+        import json
+        current_app.logger.info(json.dumps(payload, indent=2))
+        current_app.logger.info("="*80)
         
         status = payload.get('status')
         tracking_number = payload.get('requestReferenceNumber') or payload.get('trackingNumber') or payload.get('metadata', {}).get('trackingNumber')
-        payment_id = payload.get('receiptNumber') or payload.get('receipt', {}).get('receiptNo') or payload.get('id')
+        payment_id = (
+            payload.get('receiptNumber') or 
+            payload.get('receipt', {}).get('receiptNo') or 
+            payload.get('id')
+        )
         amount = payload.get('totalAmount', {}).get('value')
         student_id = payload.get('studentId') or payload.get('metadata', {}).get('studentId')
-        current_app.logger.info(f"[MAYA] Parsed fields -> status: {status}, tracking: {tracking_number}, amount: {amount}, student_id: {student_id}, payment_id: {payment_id}")
+
+        current_app.logger.info(f"[MAYA] Extracted values:")
+        current_app.logger.info(f"  - status: {status}")
+        current_app.logger.info(f"  - tracking: {tracking_number}")
+        current_app.logger.info(f"  - payment_id (receipt): {payment_id}")
+        current_app.logger.info(f"  - amount: {amount}")
+        current_app.logger.info(f"  - student_id: {student_id}")
         
         if status == 'PAYMENT_SUCCESS' and tracking_number:
             # Process payment
