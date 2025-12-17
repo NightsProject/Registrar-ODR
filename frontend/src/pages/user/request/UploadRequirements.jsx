@@ -18,6 +18,7 @@ function UploadRequirements({
   onFileRemove,
   onNext = () => {},
   onBack = () => {},
+  showToast
 }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -118,12 +119,12 @@ function UploadRequirements({
       const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
 
       if (file.size > maxSize) {
-        alert("File must be less than 10MB.");
+        showToast("File must be less than 10MB.", "warning");
         if (inputRefs.current[key]) inputRefs.current[key].value = "";
         return;
       }
       if (!allowedTypes.includes(file.type)) {
-        alert("Only PDF, JPG, JPEG, PNG allowed.");
+        showToast("Only PDF, JPG, JPEG, PNG allowed.", "warning");
         if (inputRefs.current[key]) inputRefs.current[key].value = "";
         return;
       }
@@ -172,7 +173,7 @@ function UploadRequirements({
   // Proceed
   const handleProceedClick = async () => {
     if (requirementsList.length > 0 && !allRequiredUploaded) {
-      alert("Please upload all required files.");
+      showToast("Please upload all required files.", "warning");
       return;
     }
 

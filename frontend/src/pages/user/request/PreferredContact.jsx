@@ -4,7 +4,7 @@ import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ContentBox from "../../../components/user/ContentBox";
 import ButtonLink from "../../../components/common/ButtonLink";
 
-function PreferredContact({ preferredContactInfo = {}, contactInfo, onNext, onBack, onMethodChange }) {
+function PreferredContact({ preferredContactInfo = {}, contactInfo, onNext, onBack, onMethodChange, showToast }) {
   /*
     props:
     - preferredContactInfo: object like { method: "Email" | "SMS" | "WhatsApp" | "Telegram" }
@@ -27,7 +27,7 @@ function PreferredContact({ preferredContactInfo = {}, contactInfo, onNext, onBa
 
   const handleNextClick = () => {
     if (!canProceed) {
-      alert("Please select a preferred contact method.");
+      showToast("Please select a preferred contact method.", "warning");
       return;
     }
     onNext(selectedMethod);

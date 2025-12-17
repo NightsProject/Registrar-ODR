@@ -5,11 +5,11 @@ import { getCSRFToken } from "../../../utils/csrf";
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import "./RequestViewPage.css";
+import Toast from "../../../components/common/Toast";
 
 
 
-
-const RequestViewPage_InProgress = ({ request, onRefresh }) => {
+const RequestViewPage_InProgress = ({ request, onRefresh, showToast }) => {
   const navigate = useNavigate();
   const { role } = useAuth();
   const [togglingDocuments, setTogglingDocuments] = useState({});
@@ -24,8 +24,6 @@ const RequestViewPage_InProgress = ({ request, onRefresh }) => {
   const [showRequestChangesModal, setShowRequestChangesModal] = useState(false);
   const [loading, setLoading] = useState(false);
   
-
-
   // Request Changes state
   const [wrongRequirements, setWrongRequirements] = useState([]);
   const [remarks, setRemarks] = useState("");
@@ -34,12 +32,9 @@ const RequestViewPage_InProgress = ({ request, onRefresh }) => {
   // Payment state
   const [paymentReference, setPaymentReference] = useState("");
   
-
   // Changes state
   const [changes, setChanges] = useState([]);
   const [loadingChanges, setLoadingChanges] = useState(false);
-
-
 
   useEffect(() => {
     // Add null check inside useEffect to prevent errors
@@ -118,22 +113,16 @@ const RequestViewPage_InProgress = ({ request, onRefresh }) => {
     return selectedDocsCompleted && othersDocsCompleted;
   };
 
-
-
-
   // Get button state and handler
   const getButtonState = () => {
     const allCompleted = areAllDocumentsCompleted();
 
-
-    
     if (request.status === "REJECTED" || request.status === "RELEASED" ) {
       return {
         showRequestChanges: false,
         showPaymentButton: false
       };
     }
-    
     
     if (request.status === "DOC-READY" && !request.payment_status) {
       return {
@@ -220,11 +209,11 @@ const RequestViewPage_InProgress = ({ request, onRefresh }) => {
         setPaymentReference(""); // Clear payment reference after successful update
       } else {
         const errorData = await response.json();
-        alert('Failed to update status: ' + (errorData.error || 'Unknown error'));
+        showToast('Failed to update status: ' + (errorData.error || 'Unknown error'), "error");
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Failed to update status');
+      showToast('Failed to update status', "error");
     } finally {
       setLoading(false);
     }
@@ -291,7 +280,7 @@ const RequestViewPage_InProgress = ({ request, onRefresh }) => {
       if (response.ok) {
         setShowRequestChangesModal(false);
         if (onRefresh) onRefresh();
-        alert("Changes requested and request rejected successfully.");
+        showToast("Changes requested and request rejected successfully.", "success");
         
         // Refresh changes data
         const changesResponse = await fetch(`/api/admin/requests/${request.request_id}/changes`, {
@@ -308,11 +297,11 @@ const RequestViewPage_InProgress = ({ request, onRefresh }) => {
           setChanges(changesData.changes || []);
         }
       } else {
-        alert(data.error || "Failed to submit changes");
+        showToast(data.error || "Failed to submit changes", "error");
       }
     } catch (error) {
       console.error('Error submitting changes:', error);
-      alert('Error submitting changes');
+      showToast('Error submitting changes', "error");
     } finally {
       setSubmittingChanges(false);
     }
@@ -355,7 +344,7 @@ const RequestViewPage_InProgress = ({ request, onRefresh }) => {
       } else {
         const errorData = await response.json();
         console.error('Failed to toggle document status:', errorData.error);
-        alert('Failed to toggle document status: ' + (errorData.error || 'Unknown error'));
+        showToast('Failed to toggle document status: ' + (errorData.error || 'Unknown error'), "error");
       }
     } catch (error) {
       console.error('Error toggling document status:', error);
@@ -389,7 +378,7 @@ const RequestViewPage_InProgress = ({ request, onRefresh }) => {
       } else {
         const errorData = await response.json();
         console.error('Failed to toggle others document status:', errorData.error);
-        alert('Failed to toggle others document status: ' + (errorData.error || 'Unknown error'));
+        showToast('Failed to toggle others document status: ' + (errorData.error || 'Unknown error'), "error");
       }
     } catch (error) {
       console.error('Error toggling others document status:', error);

@@ -7,15 +7,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getCSRFToken } from "../../../utils/csrf";
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import Toast from "../../../components/common/Toast";
 import "./RequestViewPage.css";
 
 
-
-const RequestViewPage_Pending = ({ request, onRefresh }) => {
+const RequestViewPage_Pending = ({ request, onRefresh, showToast }) => {
   const navigate = useNavigate();
   const { role } = useAuth();
-
-
 
   // Modal state management
   const [showProcessDocumentModal, setShowProcessDocumentModal] = useState(false);
@@ -24,7 +22,6 @@ const RequestViewPage_Pending = ({ request, onRefresh }) => {
   const [loading, setLoading] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   
-
   // Request Changes state
   const [wrongRequirements, setWrongRequirements] = useState([]);
   const [remarks, setRemarks] = useState("");
@@ -33,7 +30,6 @@ const RequestViewPage_Pending = ({ request, onRefresh }) => {
   // Changes state
   const [changes, setChanges] = useState([]);
   const [loadingChanges, setLoadingChanges] = useState(false);
-
 
   // Fetch admins for assignment
   const fetchAdmins = async () => {
@@ -136,13 +132,13 @@ const RequestViewPage_Pending = ({ request, onRefresh }) => {
       if (response.ok) {
         setShowRequestChangesModal(false);
         if (onRefresh) onRefresh();
-        alert("Changes requested and request rejected successfully.");
+        showToast("Changes requested and request rejected successfully.", "success");
       } else {
-        alert(data.error || "Failed to submit changes");
+        showToast(data.error || "Failed to submit changes", "error");
       }
     } catch (error) {
       console.error('Error submitting changes:', error);
-      alert('Error submitting changes');
+      showToast('Error submitting changes', "error");
     } finally {
       setSubmittingChanges(false);
     }
@@ -171,7 +167,7 @@ const RequestViewPage_Pending = ({ request, onRefresh }) => {
       const assignData = await assignResponse.json();
       
       if (!assignResponse.ok) {
-        alert(assignData.error || 'Failed to assign request');
+        showToast(assignData.error || 'Failed to assign request', "error", "error");
         return;
       }
 
@@ -193,21 +189,20 @@ const RequestViewPage_Pending = ({ request, onRefresh }) => {
       if (statusResponse.ok) {
         setShowProcessDocumentModal(false);
         if (onRefresh) onRefresh();
-        alert(`Request ${request.request_id} assigned successfully to ${adminId} and status updated to IN-PROGRESS`);
+        showToast(`Request ${request.request_id} assigned successfully to ${adminId} and status updated to IN-PROGRESS`, "success");
       } else {
         // Assignment succeeded but status update failed
         setShowProcessDocumentModal(false);
         if (onRefresh) onRefresh();
-        alert(`Request ${request.request_id} assigned to ${adminId} but failed to update status: ${statusData.error}`);
+        showToast(`Request ${request.request_id} assigned to ${adminId} but failed to update status: ${statusData.error}`, "error");
       }
     } catch (error) {
       console.error('Error assigning request:', error);
-      alert('Failed to assign request');
+      showToast('Failed to assign request', "error");
     } finally {
       setLoading(false);
     }
   };
-
 
   // Fetch changes data when component mounts
   useEffect(() => {
@@ -225,7 +220,6 @@ const RequestViewPage_Pending = ({ request, onRefresh }) => {
           <h1 className="request-username">{request.full_name}</h1>
           <p className="student-id">{request.student_id || "N/A"}</p>
         </div> 
-
 
         {/* Selected Documents */}
         <section className="section-block">
