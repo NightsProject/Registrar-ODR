@@ -6,7 +6,9 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { getCSRFToken } from "../../../utils/csrf";
 import { useAuth } from "../../../contexts/AuthContext";
 
+
 import StatusChangeConfirmModal from "../../../components/admin/StatusChangeConfirmModal";
+import RestrictionPopup from "../../../components/admin/RestrictionPopup";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ReqSearchbar from "../../../components/admin/ReqSearchbar";
 import AssignDropdown from "../../../components/admin/AssignDropdown";
@@ -25,7 +27,34 @@ const STATUS_MAP = {
   Change: "REJECTED" //documents is subject for change
 };
 
+
 const UI_STATUSES = Object.keys(STATUS_MAP);
+
+// =======================================
+// ALLOWED TRANSITIONS
+// =======================================
+const ALLOWED_TRANSITIONS = {
+  Pending: ["Processing", "Change"],
+  Processing: ["Unpaid", "Pending", "Change"],
+  Unpaid: ["Ready", "Processing"],
+  Ready: ["Done", "Unpaid"],
+  Done: ["Ready"],
+  Change: ["Pending"]
+};
+
+// =======================================
+// Helper to get UI Status from Request
+// =======================================
+const getCurrentUiStatus = (request) => {
+  if (request.status === "PENDING") return "Pending";
+  if (request.status === "IN-PROGRESS") return "Processing";
+  if (request.status === "DOC-READY") {
+    return request.paymentStatus ? "Ready" : "Unpaid";
+  }
+  if (request.status === "RELEASED") return "Done";
+  if (request.status === "REJECTED") return "Change";
+  return null;
+};
 
 // =======================================
 // Card Component
@@ -116,8 +145,10 @@ export default function AdminRequestsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [statusChangeRequest, setStatusChangeRequest] = useState(null);
+
+const [statusChangeRequest, setStatusChangeRequest] = useState(null);
   const [newStatus, setNewStatus] = useState(null);
+  const [restrictionData, setRestrictionData] = useState({ isOpen: false, currentStatus: '', targetStatus: '', allowedTransitions: [] });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalRequests, setTotalRequests] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -197,8 +228,28 @@ export default function AdminRequestsDashboard() {
     }
   };
 
+
   const handleDropRequest = (id, uiLabel) => {
     const request = requests.find((r) => r.request_id === id);
+    if (!request) return;
+
+
+const currentUiStatus = getCurrentUiStatus(request);
+    
+    // Check restrictions
+    if (currentUiStatus !== uiLabel) { // Only check if moving to a different column
+      const allowedTargets = ALLOWED_TRANSITIONS[currentUiStatus] || [];
+      if (!allowedTargets.includes(uiLabel)) {
+        setRestrictionData({
+          isOpen: true,
+          currentStatus: currentUiStatus,
+          targetStatus: uiLabel,
+          allowedTransitions: allowedTargets
+        });
+        return;
+      }
+    }
+
     const backendCode = STATUS_MAP[uiLabel];
 
     // Adjust payment status for Unpaid and Ready columns only
@@ -452,6 +503,9 @@ export default function AdminRequestsDashboard() {
 
 
 
+
+
+
       {statusChangeRequest && (
         <StatusChangeConfirmModal
           request={statusChangeRequest}
@@ -460,6 +514,14 @@ export default function AdminRequestsDashboard() {
           onCancel={() => setStatusChangeRequest(null)}
         />
       )}
+
+      <RestrictionPopup
+        isOpen={restrictionData.isOpen}
+        onClose={() => setRestrictionData({ ...restrictionData, isOpen: false })}
+        currentStatus={restrictionData.currentStatus}
+        targetStatus={restrictionData.targetStatus}
+        allowedTransitions={restrictionData.allowedTransitions}
+      />
     </DndProvider>
   );
 }

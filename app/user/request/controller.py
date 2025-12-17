@@ -14,7 +14,7 @@ from config import SUPABASE_URL, SUPABASE_ANON_KEY
 
 
 def send_whatsapp_tracking(phone, full_name, request_id):
-    template_name = "odr_request_submitted"
+    template_name = "odr_request_submitted_v2"
     
     components = [
         {
