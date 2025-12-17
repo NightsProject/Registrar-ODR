@@ -123,7 +123,7 @@ def mark_paid_manual():
         student_id = data.get('studentId')
         payment_id = data.get('paymentReference') or data.get('payment_id')
 
-        current_app.logger.info(f"[MAYA][BROWSER] Mark-paid request: tracking={tracking_number}, amount={amount}, student_id={student_id}")
+        current_app.logger.info(f"[MAYA][BROWSER] Mark-paid request: tracking={tracking_number}, amount={amount}, student_id={student_id}, payment_id={payment_id}")
 
         if not tracking_number or student_id is None:
             return jsonify({'success': False, 'message': 'trackingNumber and studentId are required'}), 400
