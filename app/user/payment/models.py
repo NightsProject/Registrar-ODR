@@ -50,30 +50,17 @@ class Payment:
             fee_res = cur.fetchone()
             admin_fee = float(fee_res[0]) if fee_res else 0.0
             
-            # Check if any docs are already paid to decide on admin fee inclusion
-            cur.execute("SELECT COUNT(*) FROM request_documents WHERE request_id = %s AND payment_status = TRUE", (tracking_number,))
-            paid_docs_count = cur.fetchone()[0]
-            include_admin_fee = (paid_docs_count == 0)
-
             # Fetch docs to calculate expected amounts
             cur.execute("""
-                SELECT d.doc_id, d.cost, rd.quantity, d.requires_payment_first, rd.payment_status
+                SELECT d.cost, rd.quantity
                 FROM request_documents rd
                 JOIN documents d ON rd.doc_id = d.doc_id
                 WHERE rd.request_id = %s
             """, (tracking_number,))
             docs = cur.fetchall()
 
-            total_unpaid = 0.0
-            unpaid_doc_ids = []
-
-            for doc_id, cost, qty, req_first, paid in docs:
-                if not paid:
-                    val = float(cost) * qty
-                    total_unpaid += val
-                    unpaid_doc_ids.append(doc_id)
-
-            expected_full = float(total_unpaid + (admin_fee if include_admin_fee else 0.0))
+            total_cost = sum(float(d[0]) * d[1] for d in docs)
+            expected_full = float(total_cost + admin_fee)
 
             received_amount = float(amount) if amount is not None else expected_full
             db_student_id = order[2]
@@ -86,10 +73,7 @@ class Payment:
                     'was_already_paid': previous_payment_status
                 }
             
-            docs_to_update = []
-            if abs(received_amount - expected_full) < 0.01:
-                docs_to_update = unpaid_doc_ids
-            else:
+            if abs(received_amount - expected_full) >= 0.01:
                 return {
                     'success': False,
                     'message': f'Payment amount mismatch: expected {expected_full} (Full), received {received_amount}',
@@ -97,9 +81,7 @@ class Payment:
                 }
             
             # Update payment status
-            # If admin fee was included in this payment, ensure it is recorded in the requests table
-            if include_admin_fee:
-                cur.execute("UPDATE requests SET admin_fee_amount = %s WHERE request_id = %s", (admin_fee, tracking_number))
+            cur.execute("UPDATE requests SET admin_fee_amount = %s WHERE request_id = %s", (admin_fee, tracking_number))
             
             # Update main request directly
             cur.execute("""
@@ -108,7 +90,7 @@ class Payment:
                 WHERE request_id = %s
             """, (payment_id, tracking_number,))
             
-            rows_updated = len(docs_to_update)
+            rows_updated = 1
             conn.commit()
 
             message = f'Payment confirmed for tracking number: {tracking_number}, rows updated: {rows_updated}'

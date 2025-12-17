@@ -34,23 +34,24 @@ class Tracking:
             fee_res = cur.fetchone()
             admin_fee = float(fee_res[0]) if fee_res else 0.0
 
-            # Check if any docs are already paid to decide on admin fee inclusion
-            cur.execute("SELECT COUNT(*) FROM request_documents WHERE request_id = %s AND payment_status = TRUE", (tracking_number,))
-            paid_docs_count = cur.fetchone()[0]
-            include_admin_fee = (paid_docs_count == 0)
-
-            # Calculate amounts based on unpaid documents
+            # Calculate total amount based on all documents
             cur.execute("""
-                SELECT d.cost, rd.quantity, d.requires_payment_first, rd.payment_status
+                SELECT d.cost, rd.quantity, d.requires_payment_first
                 FROM request_documents rd
                 JOIN documents d ON rd.doc_id = d.doc_id
                 WHERE rd.request_id = %s
             """, (tracking_number,))
             
             docs = cur.fetchall()
-            total_unpaid = sum(float(d[0]) * d[1] for d in docs if not d[3])
+            total_cost = sum(float(d[0]) * d[1] for d in docs)
+            amount_due = total_cost + admin_fee
+            
+            requires_payment_first = any(d[2] for d in docs)
+            
+            # If the main request is already paid, override amount due to 0
+            if record[3]:  # payment_status from requests table
+                amount_due = 0.0
 
-            amount_due = total_unpaid + (admin_fee if include_admin_fee else 0.0)
             min_amount_due = amount_due
 
             # Map database columns to frontend keys
@@ -64,6 +65,7 @@ class Tracking:
                 "remarks": record[5],
                 "trackingNumber": tracking_number,
                 "studentId": record[6],
+                "requiresPaymentFirst": requires_payment_first
             }
             
             return tracking_data
