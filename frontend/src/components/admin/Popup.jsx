@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./Popup.css";
 import ButtonLink from "../common/ButtonLink";
 import RequirementsPopup from "./RequirementsPopup";
+import { getCSRFToken } from "../../utils/csrf";
 
 function Popup({ onClose, onSuccess, document }) {
   const isEditMode = !!document;
@@ -26,9 +27,18 @@ function Popup({ onClose, onSuccess, document }) {
     requirementsItem: [],
   });
 
+
   const refreshRequirements = async () => {
     try {
-      const res = await fetch("/admin/get-requirements");
+      const csrfToken = getCSRFToken();
+      const res = await fetch("/admin/get-requirements", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error("Failed to fetch requirements");
       const data = await res.json();
       setAllRequirements(data);
@@ -65,8 +75,17 @@ function Popup({ onClose, onSuccess, document }) {
     }
   }, [price]);
 
+
   useEffect(() => {
-  fetch("/admin/get-requirements")
+  const csrfToken = getCSRFToken();
+  fetch("/admin/get-requirements", {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': csrfToken,
+    },
+    credentials: 'include',
+  })
     .then((res) => res.json())
     .then((data) => {
       setAllRequirements(data);
@@ -192,10 +211,16 @@ function Popup({ onClose, onSuccess, document }) {
 
     const method = isEditMode ? "PUT" : "POST";
 
+
     try {
+      const csrfToken = getCSRFToken();
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-TOKEN": csrfToken,
+        },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
 
