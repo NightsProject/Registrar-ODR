@@ -240,6 +240,7 @@ function TrackFlow() {
 
             if (pendingPayment) {
                 const payment = JSON.parse(pendingPayment);
+                console.log("Payment object from localStorage:", payment);
 
                 if (payment.trackingNumber === trackingNumber) {
                     // Restore trackData and studentId from localStorage
