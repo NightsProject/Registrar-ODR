@@ -57,12 +57,11 @@ function Documents() {
 
   const checkDocumentExists = async (doc_id) => {
     try {
-      const csrfToken = getCSRFToken();
       const res = await fetch(`/admin/check-doc-exist/${doc_id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
+          'X-CSRF-TOKEN': getCSRFToken(),
         },
         credentials: 'include',
       });
@@ -81,12 +80,11 @@ function Documents() {
   const handleDelete = async (docId) => {
     try {
       setLoading(true);
-      const csrfToken = getCSRFToken();
       const res = await fetch(`/admin/delete-document/${docId}`, { 
         method: "DELETE",
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
+          'X-CSRF-TOKEN': getCSRFToken(),
         },
         credentials: 'include',
       });
@@ -110,12 +108,11 @@ function Documents() {
   const handleHide = async (docId) => {
     try {
       setLoading(true);
-      const csrfToken = getCSRFToken();
       const res = await fetch(`/admin/toggle-hide-document/${docId}`, { 
         method: "PATCH",
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
+          "X-CSRF-TOKEN": getCSRFToken(),
         },
         credentials: 'include',
       });
@@ -149,10 +146,33 @@ function Documents() {
   try {
     if (!cachedData) setLoading(true);
 
+
+    const csrfToken = getCSRFToken();
     const [docsRes, reqRes, joinRes] = await Promise.all([
-      fetch("/admin/get-documents"),
-      fetch("/admin/get-document-requirements"),
-      fetch("/admin/get-documents-with-requirements")
+      fetch("/admin/get-documents", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        credentials: 'include',
+      }),
+      fetch("/admin/get-document-requirements", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        credentials: 'include',
+      }),
+      fetch("/admin/get-documents-with-requirements", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        credentials: 'include',
+      })
     ]);
 
     const documentsData = await docsRes.json();

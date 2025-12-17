@@ -1,3 +1,4 @@
+
 import ButtonLink from "../common/ButtonLink";
 import "./RequirementsPopup.css";
 import { useState, useEffect } from "react";
@@ -27,11 +28,21 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
    setInitialSelected([...selected]);
  }, []);
 
+
+
  useEffect(() => {
    const fetchRequirements = async () => {
      try {
        setLoading(true);
-       const res = await fetch("/admin/get-requirements");
+       const csrfToken = getCSRFToken();
+       const res = await fetch("/admin/get-requirements", {
+         method: 'GET',
+         headers: {
+           'Content-Type': 'application/json',
+           'X-CSRF-TOKEN': csrfToken,
+         },
+         credentials: 'include',
+       });
        if (!res.ok) throw new Error("Failed to fetch requirements");
        const data = await res.json();
        setRequirements(data);
@@ -69,11 +80,17 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  };
 
 
+
  const handleSaveNewRequirement = async (name) => {
    try {
+     const csrfToken = getCSRFToken();
      const res = await fetch("/admin/add-requirement", {
        method: "POST",
-       headers: { "Content-Type": "application/json" },
+       headers: { 
+         "Content-Type": "application/json",
+         "X-CSRF-TOKEN": csrfToken,
+       },
+       credentials: 'include',
        body: JSON.stringify({ requirement_name: name }),
      });
 
@@ -101,11 +118,20 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  };
 
 
+
  const confirmDeleteRequirement = async () => {
 
 
    try {
-     const res = await fetch(`/admin/delete-requirement/${deleteId}`, { method: "DELETE" });
+     const csrfToken = getCSRFToken();
+     const res = await fetch(`/admin/delete-requirement/${deleteId}`, { 
+       method: "DELETE",
+       headers: {
+         'Content-Type': 'application/json',
+         'X-CSRF-TOKEN': csrfToken,
+       },
+       credentials: 'include',
+     });
      const data = await res.json();
 
 
@@ -127,9 +153,18 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  };
 
 
+
  const checkRequirement = async (req_id) => {
    try {
-     const res = await fetch(`/admin/check-req/${req_id}`);
+     const csrfToken = getCSRFToken();
+     const res = await fetch(`/admin/check-req/${req_id}`, {
+       method: 'GET',
+       headers: {
+         'Content-Type': 'application/json',
+         'X-CSRF-TOKEN': csrfToken,
+       },
+       credentials: 'include',
+     });
      const data = await res.json();
 
 
@@ -145,9 +180,18 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  };
 
 
+
  const checkRequirementExists = async (req_id) => {
  try {
-   const res = await fetch(`/admin/check-req-exist/${req_id}`);
+   const csrfToken = getCSRFToken();
+   const res = await fetch(`/admin/check-req-exist/${req_id}`, {
+     method: 'GET',
+     headers: {
+       'Content-Type': 'application/json',
+       'X-CSRF-TOKEN': csrfToken,
+     },
+     credentials: 'include',
+   });
    const data = await res.json();
 
 
@@ -162,11 +206,17 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  };
 
 
+
  const handleSaveEdit = async (req_id, newName) => {
    try {
+     const csrfToken = getCSRFToken();
      const res = await fetch(`/admin/edit-requirement/${req_id}`, {
        method: "PUT",
-       headers: { "Content-Type": "application/json" },
+       headers: { 
+         "Content-Type": "application/json",
+         "X-CSRF-TOKEN": csrfToken,
+       },
+       credentials: 'include',
        body: JSON.stringify({ requirement_name: newName }),
      });
      const data = await res.json();
