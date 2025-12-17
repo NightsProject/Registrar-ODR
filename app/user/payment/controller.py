@@ -70,7 +70,7 @@ def maya_webhook():
         
         if status == 'PAYMENT_SUCCESS' and tracking_number:
             # Process payment
-            result = Payment.process_webhook_payment(tracking_number, amount, student_id)
+            result = Payment.process_webhook_payment(tracking_number, amount, student_id, payment_id)
             
             if result['success']:
                 current_app.logger.info(
@@ -121,13 +121,14 @@ def mark_paid_manual():
         tracking_number = data.get('trackingNumber') or data.get('tracking_number')
         amount = data.get('amount')
         student_id = data.get('studentId')
+        payment_id = data.get('paymentReference') or data.get('payment_id')
 
         current_app.logger.info(f"[MAYA][BROWSER] Mark-paid request: tracking={tracking_number}, amount={amount}, student_id={student_id}")
 
         if not tracking_number or student_id is None:
             return jsonify({'success': False, 'message': 'trackingNumber and studentId are required'}), 400
 
-        result = Payment.process_webhook_payment(tracking_number, amount, student_id)
+        result = Payment.process_webhook_payment(tracking_number, amount, student_id, payment_id)
         
         if result.get("success"):
             if result.get("was_already_paid"):

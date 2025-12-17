@@ -4,7 +4,7 @@ from app import db_pool
 
 class Payment:
     @staticmethod
-    def process_webhook_payment(tracking_number, amount, student_id):
+    def process_webhook_payment(tracking_number, amount, student_id, payment_id=None):
         """
         Processes a payment webhook by verifying amount and updating payment status.
 
@@ -12,6 +12,7 @@ class Payment:
             tracking_number (str): The request_id of the record.
             amount (float): The payment amount received.
             student_id (str): The student_id to validate ownership.
+            payment_id (str): The reference number/transaction ID from the payment provider.
 
         Returns:
             dict: A dictionary with 'success' (bool) and 'message' (str) keys.
@@ -96,23 +97,16 @@ class Payment:
                 }
             
             # Update payment status
-            if docs_to_update:
-                placeholders = ','.join(['%s'] * len(docs_to_update))
-                query = f"UPDATE request_documents SET payment_status = TRUE, payment_date = (NOW() AT TIME ZONE 'UTC' + INTERVAL '8 HOURS') WHERE request_id = %s AND doc_id IN ({placeholders})"
-                cur.execute(query, [tracking_number] + docs_to_update)
-                
-                # If admin fee was included in this payment, ensure it is recorded in the requests table
-                if include_admin_fee:
-                    cur.execute("UPDATE requests SET admin_fee_amount = %s WHERE request_id = %s", (admin_fee, tracking_number))
+            # If admin fee was included in this payment, ensure it is recorded in the requests table
+            if include_admin_fee:
+                cur.execute("UPDATE requests SET admin_fee_amount = %s WHERE request_id = %s", (admin_fee, tracking_number))
             
-            # 2. Check if all documents are paid before updating main request
-            cur.execute("SELECT COUNT(*) FROM request_documents WHERE request_id = %s AND payment_status = FALSE", (tracking_number,))
-            if cur.fetchone()[0] == 0:
-                cur.execute("""
-                    UPDATE requests
-                    SET payment_status = TRUE, payment_date = (NOW() AT TIME ZONE 'UTC' + INTERVAL '8 HOURS')
-                    WHERE request_id = %s
-                """, (tracking_number,))
+            # Update main request directly
+            cur.execute("""
+                UPDATE requests
+                SET payment_status = TRUE, payment_date = (NOW() AT TIME ZONE 'UTC' + INTERVAL '8 HOURS'), payment_reference = %s
+                WHERE request_id = %s
+            """, (payment_id, tracking_number,))
             
             rows_updated = len(docs_to_update)
             conn.commit()
@@ -254,45 +248,19 @@ class Payment:
             
             previous_request_payment_status = bool(request_record[2])
             
-            # Create placeholders for the IN clause
-            placeholders = ','.join(['%s'] * len(doc_ids))
-            query = f"""
-                UPDATE request_documents
-                SET payment_status = TRUE, payment_date = (NOW() AT TIME ZONE 'UTC' + INTERVAL '8 HOURS')
-                WHERE request_id = %s AND doc_id IN ({placeholders})
-            """
-            
-            cur.execute(query, [tracking_number] + doc_ids)
-            
-            rows_updated = cur.rowcount
-            
-            # Check if all documents in the request have payment_status = TRUE
+            # Update request payment status directly
             cur.execute("""
-                SELECT COUNT(*) as total_docs,
-                       SUM(CASE WHEN payment_status = TRUE THEN 1 ELSE 0 END) as paid_docs
-                FROM request_documents
+                UPDATE requests
+                SET payment_status = TRUE, payment_date = (NOW() AT TIME ZONE 'UTC' + INTERVAL '8 HOURS')
                 WHERE request_id = %s
             """, (tracking_number,))
             
-            doc_counts = cur.fetchone()
-            total_docs = doc_counts[0]
-            paid_docs = doc_counts[1]
+            rows_updated = cur.rowcount
+            request_payment_updated = True
+            total_docs = len(doc_ids)
+            paid_docs = len(doc_ids)
             
-            # If all documents are paid and request payment status was not already TRUE, update it
-            request_payment_updated = False
-            if total_docs > 0 and total_docs == paid_docs and not previous_request_payment_status:
-                cur.execute("""
-                    UPDATE requests
-                    SET payment_status = TRUE
-                    WHERE request_id = %s
-                """, (tracking_number,))
-                request_payment_updated = True
-                message = f'{rows_updated} document(s) payment confirmed for tracking number: {tracking_number}. All documents paid - request payment status updated to TRUE.'
-            else:
-                if total_docs > 0 and total_docs == paid_docs:
-                    message = f'{rows_updated} document(s) payment confirmed for tracking number: {tracking_number}. All documents are now paid.'
-                else:
-                    message = f'{rows_updated} document(s) payment confirmed for tracking number: {tracking_number}. {paid_docs}/{total_docs} documents are now paid.'
+            message = f'Payment confirmed for tracking number: {tracking_number}. Request payment status updated to TRUE.'
             
             conn.commit()
             
