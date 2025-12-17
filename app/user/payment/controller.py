@@ -62,7 +62,7 @@ def maya_webhook():
         current_app.logger.info(f"[MAYA] Payload received: {payload}")
         
         status = payload.get('status')
-        tracking_number = payload.get('trackingNumber')
+        tracking_number = payload.get('requestReferenceNumber') or payload.get('trackingNumber') or payload.get('metadata', {}).get('trackingNumber')
         payment_id = payload.get('id')
         amount = payload.get('totalAmount', {}).get('value')
         student_id = payload.get('studentId') or payload.get('metadata', {}).get('studentId')
@@ -115,7 +115,6 @@ def verify_signature(payload_bytes, signature):
 
 
 @payment_bp.route('/mark-paid', methods=['POST'])
-@jwt_required()
 def mark_paid_manual():
     try:
         data = request.get_json() or {}
@@ -169,7 +168,6 @@ def mark_paid_manual():
 
 
 @payment_bp.route('/mark-document-paid', methods=['POST'])
-@jwt_required()
 def mark_document_paid():
     try:
         data = request.get_json() or {}
