@@ -515,7 +515,7 @@ def populate_independent_tables():
        # Students data
        student_values = [
            ("2025-1011", "Nights Project", "639518876143", "nightnightproject@gmail.com", False, "Nights", "Project", "CCS")
-      
+       ]
        extras.execute_values(
            cur,
            """
