@@ -34,7 +34,6 @@ postgrest==2.24.0
 pytz==2025.2
 propcache==0.4.1
 psycopg2-binary==2.9.11
-pytz==2024.2
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycparser==2.23
