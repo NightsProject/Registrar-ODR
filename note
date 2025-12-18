@@ -53,3 +53,37 @@ Note:
 
 manage request
     assign request - manager and admin view
+
+
+
+
+
+
+    20 clients atleast in a day
+
+    request for changes - can upload
+
+    when assigning a request it will change the status to IN_PROGRESS
+
+    in the auditor view - add the breakdown of fees
+
+    add support button in client side -- chat and call support 
+    
+    manager role - didicated releasing tab 
+
+    satisfaction survey
+
+    fee management
+
+    edit reason in the manage date - you can update the reason via manually inputing the date in it
+
+    optimize documents management query
+
+    load this day view for the assignments
+
+    the availability would be based on the server time so when deployed in render its not philippines time
+
+
+
+
+
