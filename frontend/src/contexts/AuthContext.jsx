@@ -130,10 +130,12 @@ export const AuthProvider = ({ children }) => {
 
 
 
+
     const rolePermissions = {
+      developer: ['dashboard', 'requests', 'transactions', 'documents', 'logs', 'settings', 'developers'],
       admin: ['dashboard', 'requests', 'transactions', 'documents', 'logs', 'settings'],
       manager: ['dashboard', 'requests', 'documents', 'logs'],
-      auditor:['dashboard', 'transactions', 'view_request_details'],
+      auditor: ['dashboard', 'transactions', 'view_request_details'],
       staff: ['dashboard', 'requests'],
       none: [],
     };
@@ -149,6 +151,7 @@ export const AuthProvider = ({ children }) => {
   const canAccessRoute = (path) => {
     if (!role || !path) return false;
     
+
     const routePermissions = {
       '/admin/dashboard': 'dashboard',
       '/admin/requests': 'requests',
@@ -156,6 +159,7 @@ export const AuthProvider = ({ children }) => {
       '/admin/document': 'documents',
       '/admin/logs': 'logs',
       '/admin/settings': 'settings',
+      '/admin/developers': 'developers',
     };
     
     const permission = routePermissions[path];
@@ -169,13 +173,15 @@ export const AuthProvider = ({ children }) => {
   const getFilteredNavigationItems = () => {
     if (!role) return [];
     
+
     const navigationItems = [
       { name: 'Dashboard', path: '/admin/dashboard', permission: 'dashboard' },
       { name: 'Requests', path: '/admin/requests', permission: 'requests' },
       { name: 'Transactions', path: '/admin/transactions', permission: 'transactions' },
       { name: 'Documents', path: '/admin/document', permission: 'documents' },
       { name: 'Logs', path: '/admin/logs', permission: 'logs' },
-      { name: 'Settings', path: '/admin/settings', permission: 'settings' }
+      { name: 'Settings', path: '/admin/settings', permission: 'settings' },
+      { name: 'Developers', path: '/admin/developers', permission: 'developers' }
     ];
     
     return navigationItems.filter(item => hasPermission(item.permission));
