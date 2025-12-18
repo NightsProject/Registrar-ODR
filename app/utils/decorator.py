@@ -1,9 +1,8 @@
-
-
 from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
 from app.admin.settings.models import OpenRequestRestriction, AvailableDates
+from app.utils.time_utils import get_philippine_time_info, parse_time_string
 import datetime
 import json
 
@@ -51,16 +50,19 @@ def request_allowed_required():
 
 
 
+
 def is_request_allowed():
     """
     Check if requesting is allowed at the current time based on settings.
     Precedence order: Time → Date → Day
+    Uses Philippine time (UTC+8) for all time calculations.
     """
     try:
-        now = datetime.datetime.now()
-        current_day = now.strftime('%A')  # e.g., 'Monday'
-        current_time = now.time()
-        current_date_str = now.strftime('%Y-%m-%d')  # e.g., '2024-12-25'
+        # Get current Philippine time
+        time_info = get_philippine_time_info()
+        current_time = time_info['current_time']
+        current_day = time_info['current_day']
+        current_date_str = time_info['current_date_str']
 
         # STEP 1: Check time restrictions first (highest priority)
         settings = OpenRequestRestriction.get_settings()
@@ -69,15 +71,9 @@ def is_request_allowed():
             end_time_str = settings.get('end_time', '17:00:00')
 
             # Validate time strings and provide defaults
-            try:
-                start_time = datetime.datetime.strptime(start_time_str, '%H:%M:%S').time()
-            except ValueError:
-                start_time = datetime.time(9, 0, 0)  # 09:00:00
+            start_time = parse_time_string(start_time_str) or datetime.time(9, 0, 0)
+            end_time = parse_time_string(end_time_str) or datetime.time(17, 0, 0)
 
-            try:
-                end_time = datetime.datetime.strptime(end_time_str, '%H:%M:%S').time()
-            except ValueError:
-                end_time = datetime.time(17, 0, 0)  # 17:00:00
 
             # Handle time range logic properly
             # For same-day requests: start_time <= current_time <= end_time
@@ -86,15 +82,15 @@ def is_request_allowed():
             if start_time <= end_time:
                 # Same day range (e.g., 09:00 to 17:00)
                 time_allowed = start_time <= current_time <= end_time
-                print(f"Time check: {current_time} between {start_time} and {end_time}: {time_allowed}")
+                print(f"Philippine Time check: {current_time} between {start_time} and {end_time}: {time_allowed}")
             else:
                 # Overnight range (e.g., 22:00 to 06:00)
                 time_allowed = current_time >= start_time or current_time <= end_time
-                print(f"Overnight time check: {current_time} >= {start_time} or {current_time} <= {end_time}: {time_allowed}")
+                print(f"Overnight Philippine Time check: {current_time} >= {start_time} or {current_time} <= {end_time}: {time_allowed}")
 
             # If not within allowed time, deny immediately
             if not time_allowed:
-                print(f"Current time {current_time} is outside allowed range {start_time} to {end_time}")
+                print(f"Philippine Time {current_time} is outside allowed range {start_time} to {end_time}")
                 return False
 
         # STEP 2: Check date-specific restrictions second

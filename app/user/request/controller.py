@@ -52,9 +52,11 @@ def get_public_request_status():
     Public endpoint to check current request restriction status.
     No authentication required - used by landing page to show/hide request functionality.
     """
+
     try:
         from app.utils.decorator import is_request_allowed
         from app.admin.settings.models import OpenRequestRestriction, AvailableDates
+        from app.utils.time_utils import get_philippine_time_info
         
         # Get current restriction status
         allowed = is_request_allowed()
@@ -62,9 +64,9 @@ def get_public_request_status():
         # Get current settings for display
         settings = OpenRequestRestriction.get_settings()
         
-        # Get today's date restriction info
-        import datetime
-        today = datetime.datetime.now().strftime('%Y-%m-%d')
+        # Get today's date restriction info using Philippine time
+        time_info = get_philippine_time_info()
+        today = time_info['current_date_str']
         today_availability = AvailableDates.is_date_available(today)
         
         # Get upcoming date restrictions
@@ -89,7 +91,14 @@ def get_public_request_status():
         
     except Exception as e:
         print(f"Error in /api/public/request-status: {e}")
+
         # Return default settings if there's an error
+        try:
+            time_info = get_philippine_time_info()
+            today = time_info['current_date_str']
+        except:
+            today = "2024-01-01"  # fallback date
+        
         return jsonify({
             "allowed": True,  # Default to allowing requests if there's an error
             "settings": {
@@ -99,7 +108,7 @@ def get_public_request_status():
                 "announcement": ""
             },
             "date_info": {
-                "today": datetime.datetime.now().strftime('%Y-%m-%d'),
+                "today": today,
                 "today_available": None,
                 "has_today_restriction": False,
                 "upcoming_restrictions": []
