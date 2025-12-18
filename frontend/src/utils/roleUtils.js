@@ -1,6 +1,8 @@
 // Role-based access control utilities
 
 
+
+
 /**
  * Define role permissions for navigation items
  */
@@ -12,6 +14,7 @@ export const ROLE_PERMISSIONS = {
     documents: true,
     logs: true,
     settings: true,
+    developers: false,  
   },
   manager: {
     dashboard: true,
@@ -20,6 +23,7 @@ export const ROLE_PERMISSIONS = {
     documents: true,
     logs: false,
     settings: false,
+    developers: false,
   },
   staff: {
     dashboard: true,
@@ -28,6 +32,16 @@ export const ROLE_PERMISSIONS = {
     documents: false,
     logs: false,
     settings: false,
+    developers: false,
+  },
+  developer: {
+    dashboard: true,
+    requests: true,
+    transactions: true,
+    documents: true,
+    logs: true,
+    settings: true,
+    developers: true,  
   },
   none: {
     dashboard: false,
@@ -36,8 +50,10 @@ export const ROLE_PERMISSIONS = {
     documents: false,
     logs: false,
     settings: false,
+    developers: false,
   },
 };
+
 
 /**
  * Define navigation items with their corresponding permission keys
@@ -48,7 +64,8 @@ export const NAVIGATION_ITEMS = [
   { name: 'Transactions', path: '/admin/transactions', permission: 'transactions', icon: 'PaidIcon' },
   { name: 'Documents', path: '/admin/document', permission: 'documents', icon: 'DocumentsIcon' },
   { name: 'Logs', path: '/admin/logs', permission: 'logs', icon: 'LogsIcon' },
-  { name: 'Settings', path: '/admin/settings', permission: 'settings', icon: 'SettingsIcon' }
+  { name: 'Settings', path: '/admin/settings', permission: 'settings', icon: 'SettingsIcon' },
+  { name: 'Developers', path: '/admin/developers', permission: 'developers', icon: 'CodeIcon' }
 ];
 
 /**
@@ -110,6 +127,7 @@ export const getDefaultPathForRole = (role) => {
   return '/admin/waiting';
 };
 
+
 /**
  * Validate and normalize user role
  * @param {string} role - Raw role from server
@@ -118,7 +136,7 @@ export const getDefaultPathForRole = (role) => {
 export const normalizeRole = (role) => {
   if (!role) return 'none';
   
-  const validRoles = ['admin', 'manager', 'auditor', 'staff', 'none'];
+  const validRoles = ['admin', 'manager', 'auditor', 'staff', 'developer', 'none'];
   const normalizedRole = role.toLowerCase().trim();
   
   return validRoles.includes(normalizedRole) ? normalizedRole : 'none';

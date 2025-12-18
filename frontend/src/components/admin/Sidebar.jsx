@@ -1,4 +1,5 @@
 
+
 import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
 import DashboardIcon from '../icons/DashboardIcon';
@@ -7,6 +8,7 @@ import LogsIcon from '../icons/LogsIcon';
 import PaidIcon from '../icons/PaidIcon';
 import RequestsIcon from '../icons/RequestsIcon';
 import SettingsIcon from '../icons/SettingsIcon';
+import CodeIcon from '../icons/CodeIcon';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFilteredNavigationItems } from '../../utils/roleUtils';
 
@@ -14,6 +16,7 @@ import { getFilteredNavigationItems } from '../../utils/roleUtils';
 const Sidebar = () => {
     const { role, getFilteredNavigationItems } = useAuth();
     const filteredNavItems = getFilteredNavigationItems();
+
 
     // Define icon mapping for navigation items
     const getIconComponent = (iconName) => {
@@ -24,9 +27,11 @@ const Sidebar = () => {
             'DocumentsIcon': DocumentsIcon,
             'LogsIcon': LogsIcon,
             'SettingsIcon': SettingsIcon,
+            'CodeIcon': CodeIcon,
         };
         return iconMap[iconName] || DashboardIcon;
     };
+
 
     // Get all available navigation items with their icons
     const allNavItems = [
@@ -35,7 +40,8 @@ const Sidebar = () => {
         { name: 'Transactions', path: '/admin/transactions', icon: 'PaidIcon' },
         { name: 'Documents', path: '/admin/document', icon: 'DocumentsIcon' },
         { name: 'Logs', path: '/admin/logs', icon: 'LogsIcon' },
-        { name: 'Settings', path: '/admin/settings', icon: 'SettingsIcon' }
+        { name: 'Settings', path: '/admin/settings', icon: 'SettingsIcon' },
+        { name: 'Developers', path: '/admin/developers', icon: 'CodeIcon' }
     ];
 
     // Filter navigation items based on user role
