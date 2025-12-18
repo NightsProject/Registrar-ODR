@@ -1,4 +1,3 @@
-
 # 🎓 Registrar: Online Document Request (ODR) System
 
 <div align="center">
@@ -66,7 +65,7 @@ The **Registrar: Online Document Request (ODR)** system is a comprehensive web-b
 
 ### Backend
 - **Framework**: Python Flask 3.1.2
-- **Database**: PostgreSQL with connection pooling
+- **Database**: PostgreSQL 13+ with psycopg2-binary connection pooling
 - **Authentication**: 
   - JWT (JSON Web Tokens) for session management
   - Google OAuth 2.0 for admin authentication
@@ -76,6 +75,7 @@ The **Registrar: Online Document Request (ODR)** system is a comprehensive web-b
 - **File Storage**: Supabase for document and authorization letter storage
 - **Payment Processing**: Maya payment gateway integration
 - **Logging**: Structured logging for audit trails and debugging
+- **Dependencies**: Authlib, google-auth, postgrest, supabase, pydantic, httpx
 
 ### Frontend
 - **Framework**: React 19.2.0 with modern hooks and context
@@ -83,15 +83,15 @@ The **Registrar: Online Document Request (ODR)** system is a comprehensive web-b
 - **Routing**: React Router DOM 7.9.4 for navigation
 - **State Management**: React Context API with custom hooks
 - **HTTP Client**: Axios for API communication
-- **Icons**: Custom SVG icons and icon libraries
-- **Build Tools**: Create React App with custom configurations
+- **Build Tools**: React Scripts 5.0.1 with dotenv-cli
 - **Development**: Hot reload, proxy configuration for API calls
+- **Additional Libraries**: React DnD, html2pdf.js, testing libraries
 
 ### Database & Infrastructure
 - **Database**: PostgreSQL 13+ with optimized indexes
-- **Connection Pooling**: psycopg2 connection pool for performance
+- **Connection Pooling**: psycopg2-binary connection pool for performance
 - **File Storage**: Supabase for cloud file storage
-- **Environment Management**: Python Pipenv for dependency management
+- **Environment Management**: Python pipenv for dependency management
 - **Configuration**: Environment-based configuration with .env files
 
 ### External Integrations
@@ -102,15 +102,12 @@ The **Registrar: Online Document Request (ODR)** system is a comprehensive web-b
 
 ---
 
-
----
-
 ## 🚀 Quick Start
 
 ### Prerequisites
 Ensure you have the following installed:
 - **Python 3.13+**
-- **Node.js 16+** and **npm/yarn**
+- **Node.js 16+** and **npm**
 - **PostgreSQL 13+** (running instance)
 - **Git**
 
@@ -138,11 +135,11 @@ cp .env.example .env
 # Edit .env with your configuration
 
 # 6. Initialize database
-flask --app run.py db-init
+python -c "from app.db_init import initialize_and_populate; initialize_and_populate()"
 
 # 7. Run the application
 # Terminal 1 - Backend
-flask --app run.py run
+python run.py
 
 # Terminal 2 - Frontend
 cd frontend && npm start
@@ -150,7 +147,7 @@ cd frontend && npm start
 
 ### 🌐 Access the Application
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
+- **Backend API**: http://127.0.0.1:8000 (proxied through frontend)
 - **Admin Panel**: http://localhost:3000/admin/login
 
 ---
@@ -221,10 +218,6 @@ cd frontend
 # Install Node.js dependencies
 npm install
 
-# Install additional development tools
-npm install -g create-react-app
-npm install -g dotenv-cli
-
 # Return to project root
 cd ..
 ```
@@ -260,10 +253,6 @@ Create a `.env` file in the project root directory:
 # ===========================================
 # FLASK APPLICATION CONFIGURATION
 # ===========================================
-FLASK_APP=run.py
-FLASK_ENV=development
-FLASK_RUN_HOST=0.0.0.0
-FLASK_RUN_PORT=8000
 FLASK_SECRET_KEY="your-super-secret-flask-key-here"
 JWT_SECRET_KEY="your-jwt-secret-key-here"
 
@@ -281,7 +270,6 @@ DB_PORT=5432
 # ===========================================
 GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
-REACT_APP_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 
 # ===========================================
 # SUPABASE CONFIGURATION
@@ -294,20 +282,11 @@ SUPABASE_ANON_KEY="your-supabase-anon-key"
 # ===========================================
 MAYA_SECRET_KEY="your-maya-secret-key"
 MAYA_PUBLIC_KEY="your-maya-public-key"
-MAYA_DISABLE_SECURITY=true  # Set to false in production
 
 # ===========================================
-# WHATSAPP CONFIGURATION
+# FRONTEND CONFIGURATION
 # ===========================================
-WHATSAPP_API_URL="https://graph.facebook.com/v17.0"
-WHATSAPP_ACCESS_TOKEN="your-whatsapp-access-token"
-WHATSAPP_PHONE_NUMBER_ID="your-phone-number-id"
-
-# ===========================================
-# DEVELOPMENT CONFIGURATION
-# ===========================================
-BOOTSTRAP_SERVE_LOCAL=true
-DEBUG=true
+FRONTEND_URL="http://localhost:3000"
 ```
 
 ### 5️⃣ Running the Application
@@ -320,8 +299,6 @@ DEBUG=true
 pipenv shell
 
 # Run Flask development server
-flask --app run.py run
-# or
 python run.py
 ```
 
@@ -331,23 +308,19 @@ cd frontend
 npm start
 ```
 
-#### Production Mode
+#### Build for Production
 
-**Backend:**
-```bash
-# Using Gunicorn
-gunicorn --bind 0.0.0.0:8000 run:app
-
-# Using Docker
-docker build -t odr-backend .
-docker run -p 8000:8000 --env-file .env odr-backend
-```
-
-**Frontend:**
+**Frontend Build:**
 ```bash
 cd frontend
 npm run build
-# Serve build folder with nginx or similar
+# This automatically copies the build to app/static/react/
+```
+
+**Backend Production:**
+```bash
+# Using Gunicorn
+gunicorn --bind 0.0.0.0:8000 run:app
 ```
 
 ### 6️⃣ Default Admin Account
@@ -363,55 +336,45 @@ To create the first admin account:
    - Login with Google account from @g.msuiit.edu.ph domain
    - System automatically creates admin role
 
-3. **Manual Admin Creation** (if needed):
-   ```bash
-   # Run admin creation script
-   python -c "
-   from app.admin.authentication.models import Admin
-   from app import create_app
-   app = create_app()
-   with app.app_context():
-       admin = Admin(email='admin@g.msuiit.edu.ph', role='admin')
-       admin.save()
-   "
-   ```
-
 ---
 
 ## 🔧 Configuration
 
+### Backend Configuration
+The system uses environment-based configuration through `config.py`:
+
+```python
+# Key configuration values
+FLASK_SECRET_KEY = getenv("FLASK_SECRET_KEY")
+JWT_SECRET_KEY = getenv("JWT_SECRET_KEY")
+DB_NAME = getenv("DB_NAME")
+DB_USERNAME = getenv("DB_USERNAME")
+DB_PASSWORD = getenv("DB_PASSWORD")
+DB_HOST = getenv("DB_HOST")
+DB_PORT = getenv("DB_PORT")
+GOOGLE_CLIENT_ID = getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = getenv("GOOGLE_CLIENT_SECRET")
+SUPABASE_URL = getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = getenv("SUPABASE_ANON_KEY")
+FRONTEND_URL = getenv("FRONTEND_URL", "http://localhost:3000")
+```
+
+### Frontend Configuration
+The frontend uses React Scripts with proxy configuration:
+
+```json
+{
+  "proxy": "http://127.0.0.1:8000",
+  "scripts": {
+    "start": "dotenv -e ../.env -- react-scripts start",
+    "build": "react-scripts build && rm -rf ../app/static/react && mkdir -p ../app/static/react && cp -r build/* ../app/static/react/"
+  }
+}
+```
+
 ### Database Configuration
 
-The system uses PostgreSQL with connection pooling for optimal performance:
-
-```python
-# Connection pool settings (in app/__init__.py)
-db_pool = pool.SimpleConnectionPool(
-    minconn=1,           # Minimum connections
-    maxconn=10,          # Maximum connections
-    user=DB_USERNAME,
-    password=DB_PASSWORD,
-    host=DB_HOST,
-    port=DB_PORT,
-    database=DB_NAME
-)
-```
-
-### Authentication Configuration
-
-#### JWT Configuration
-```python
-app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True
-```
-
-#### Google OAuth Configuration
-```python
-# Domain restriction for admin access
-ALLOWED_DOMAIN = "g.msuiit.edu.ph"
-```
+The system uses PostgreSQL with connection pooling for optimal performance. Connection settings are managed through environment variables.
 
 ### Session Configuration
 ```python
@@ -421,23 +384,42 @@ app.config["SESSION_COOKIE_SECURE"] = False  # Set True in production
 app.config["SESSION_TYPE"] = "filesystem"
 ```
 
-
-### CORS Configuration
-```python
-CORS(
-    app,
-    supports_credentials=True,
-    origins=["http://localhost:3000"],
-    allow_headers=["Content-Type", "Authorization"],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-)
-```
-
 ---
 
-## 📚 API Documentation
+## 📚 Documentation
 
+### API Documentation
 The ODR system provides a comprehensive REST API with detailed endpoints for both users and administrators. For complete API documentation, see [Documentation/API_DOCUMENTATION.md](Documentation/API_DOCUMENTATION.md).
+
+### Admin Panel Documentation
+Comprehensive documentation covering all administrative features and functionality:
+
+#### 📊 [Admin Dashboard Documentation](Documentation/01_DASHBOARD_TAB.md)
+Central command center providing statistical overview and real-time monitoring of system performance, request statistics, and administrative activities.
+
+#### 🔐 [Admin Authentication Documentation](Documentation/02_AUTHENTICATION_TAB.md)
+Security gateway managing administrator access through Google OAuth integration and comprehensive admin user management with role-based access control.
+
+#### 📋 [Manage Request Documentation](Documentation/03_MANAGE_REQUEST_TAB.md)
+Complete request lifecycle management system enabling administrators to view, assign, process, and track document requests from submission to completion.
+
+#### 📄 [Document Management Documentation](Documentation/04_DOCUMENT_MANAGEMENT_TAB.md)
+Administrative control center for defining, configuring, and maintaining document types, requirements, and the foundational data structure for document processing.
+
+#### 📝 [Logging Documentation](Documentation/05_LOGGING_TAB.md)
+Comprehensive audit and monitoring system providing complete visibility into all administrative activities, system events, and operational logging for security and compliance.
+
+#### ⚙️ [Settings Documentation](Documentation/06_SETTINGS_TAB.md)
+Central configuration management hub for system parameters, operational constraints, user access policies, and administrative configurations affecting all system users.
+
+#### 💰 [Transactions Documentation](Documentation/07_TRANSACTIONS_TAB.md)
+Comprehensive financial management and reporting center for transaction oversight, revenue tracking, payment processing, and financial analytics.
+
+#### 📖 [Admin Documentation Index](Documentation/00_ADMIN_DOCUMENTATION_INDEX.md)
+Master index and overview document providing cross-tab integration details and comprehensive guide to all administrative functionality.
+
+### Complete Documentation Overview
+All admin documentation covers the complete implementation flow from **Database Models → Backend Controllers → Frontend Interfaces**, explaining each feature in detail without code examples, focusing on plain language explanations of functionality, integration points, and system architecture.
 
 ### 🔗 Quick API Reference
 
@@ -488,10 +470,16 @@ registrar-odr-1/
 │   │   └── 📁 tracking/             # Request tracking
 │   ├── 📁 whatsapp/                 # WhatsApp integration
 │   ├── 📁 services/                 # External services
+│   │   └── 📁 supabase_file_service.py
 │   ├── 📁 utils/                    # Utility functions
+│   │   ├── 📁 decorator.py          # Custom decorators
+│   │   └── 📁 error_handlers.py     # Error handling
 │   ├── 📁 templates/                # HTML templates
-│   ├── __init__.py                  # Flask app factory
-│   └── db_init.py                   # Database initialization
+│   │   └── 📁 index.html            # Main template
+│   ├── 📁 __init__.py               # Flask app factory
+│   ├── 📁 db_init.py                # Database initialization
+│   └── 📁 static/                   # Static files
+│       └── 📁 react/                # Built React application
 ├── 📁 frontend/                     # React frontend application
 │   ├── 📁 src/
 │   │   ├── 📁 components/           # React components
@@ -500,29 +488,46 @@ registrar-odr-1/
 │   │   │   ├── 📁 icons/            # Custom icons
 │   │   │   └── 📁 user/             # User-specific components
 │   │   ├── 📁 contexts/             # React contexts
+│   │   │   └── 📁 AuthContext.jsx   # Authentication context
 │   │   ├── 📁 hooks/                # Custom React hooks
 │   │   ├── 📁 pages/                # Page components
 │   │   ├── 📁 services/             # API services
 │   │   └── 📁 utils/                # Frontend utilities
+│   │       ├── 📁 csrf.js           # CSRF utilities
+│   │       └── 📁 roleUtils.js      # Role utilities
 │   ├── 📁 public/                   # Static assets
-│   ├── package.json                 # Node.js dependencies
-│   └── tailwind.config.js           # Tailwind CSS configuration
+│   │   └── 📁 assets/               # Images and icons
+│   ├── 📁 package.json              # Node.js dependencies
+│   └── 📁 tailwind.config.js        # Tailwind CSS configuration
 ├── 📁 Documentation/                # Project documentation
-│   ├── API_DOCUMENTATION.md         # Detailed API docs
-│   └── API_ENDPOINTS_CHECK.md       # Endpoint testing guide
+│   ├── 📄 API_DOCUMENTATION.md      # Detailed API docs
+│   ├── 📄 API_ENDPOINTS_CHECK.md    # Endpoint testing guide
+│   ├── 📄 COMPREHENSIVE_TESTING_CHECKLIST.md
+│   ├── 📄 DATE_TIME_RESTRICTION.md
+│   ├── 📄 00_ADMIN_DOCUMENTATION_INDEX.md
+│   ├── 📄 01_DASHBOARD_TAB.md
+│   ├── 📄 02_AUTHENTICATION_TAB.md
+│   ├── 📄 03_MANAGE_REQUEST_TAB.md
+│   ├── 📄 04_DOCUMENT_MANAGEMENT_TAB.md
+│   ├── 📄 05_LOGGING_TAB.md
+│   ├── 📄 06_SETTINGS_TAB.md
+│   └── 📄 07_TRANSACTIONS_TAB.md
 ├── 📁 migrate/                      # Database migration scripts
-├── config.py                        # Configuration management
-├── requirements.txt                 # Python dependencies
-├── Pipfile                          # Pipenv configuration
-├── run.py                           # Application entry point
-└── README.md                        # This file
+│   └── 📄 migrate_college_code.py
+├── 📄 config.py                     # Configuration management
+├── 📄 requirements.txt              # Python dependencies
+├── 📄 Pipfile                       # Pipenv configuration
+├── 📄 Pipfile.lock                  # Pipenv lock file
+├── 📄 run.py                        # Application entry point
+├── 📄 .gitignore                    # Git ignore rules
+└── 📄 README.md                     # This file
 ```
 
 ### 🏗️ Architecture Overview
 
 **Backend Architecture (Flask)**:
 - **Modular Blueprint Structure**: Separate blueprints for user/admin functionality
-- **Database Connection Pooling**: Optimized PostgreSQL connections
+- **Database Connection Management**: Environment-based PostgreSQL connections
 - **JWT Authentication**: Stateless authentication with secure cookies
 - **Error Handling**: Comprehensive error handling with custom handlers
 - **Logging**: Structured logging for audit trails and debugging
@@ -536,7 +541,7 @@ registrar-odr-1/
 
 **Database Design**:
 - **Normalized Schema**: Optimized for performance and data integrity
-- **Connection Pooling**: Efficient database connection management
+- **Connection Management**: Efficient database connection management
 - **Indexes**: Strategic indexes for query optimization
 - **Constraints**: Foreign key constraints and data validation
 
@@ -611,31 +616,16 @@ python -m pytest tests/test_api_authentication.py -v
 4. **Settings Configuration**: Test system settings
 5. **Transaction Processing**: Test financial reporting
 
-### Test Data
-
-```sql
--- Sample test data for development
-INSERT INTO students (student_id, firstname, lastname, college_code) VALUES
-('2020-0001', 'John', 'Doe', 'CCS'),
-('2020-0002', 'Jane', 'Smith', 'COE'),
-('2020-0003', 'Bob', 'Johnson', 'CBA');
-
-INSERT INTO documents (doc_id, doc_name, cost) VALUES
-('DOC0001', 'Transcript of Records', 100.00),
-('DOC0002', 'Certificate of Enrollment', 75.00),
-('DOC0003', 'Diploma', 150.00);
-```
-
 ---
 
 ## 🚀 Deployment
 
 ### Production Deployment
 
-#### Using Docker
+#### Option 1: Docker Deployment
 
+**Backend Dockerfile:**
 ```dockerfile
-# Backend Dockerfile
 FROM python:3.13-slim
 
 WORKDIR /app
@@ -648,8 +638,26 @@ EXPOSE 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "run:app"]
 ```
 
+**Frontend Dockerfile:**
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend/ .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=0 /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Docker Compose:**
 ```yaml
-# docker-compose.yml
 version: '3.8'
 services:
   postgres:
@@ -660,6 +668,8 @@ services:
       POSTGRES_PASSWORD: password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   backend:
     build: .
@@ -668,42 +678,67 @@ services:
       DB_NAME: odr_system
       DB_USERNAME: odr_user
       DB_PASSWORD: password
+      FLASK_ENV: production
     depends_on:
       - postgres
+    ports:
+      - "8000:8000"
 
   frontend:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     ports:
-      - "3000:3000"
+      - "80:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
 ```
 
-#### Using Traditional Deployment
+#### Option 2: Traditional Server Deployment
 
+**Backend Deployment:**
 ```bash
-# Backend deployment
+# Install dependencies
+pipenv install --deploy
+
+# Build frontend
+cd frontend && npm run build && cd ..
+
+# Run with Gunicorn
 gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 run:app
+```
 
-# Frontend deployment
-cd frontend && npm run build
-# Serve build/ directory with nginx
-
-# Nginx configuration
+**Nginx Configuration:**
+```nginx
 server {
     listen 80;
     server_name your-domain.com;
 
+    # Frontend
     location / {
-        root /path/to/frontend/build;
+        root /path/to/registrar-odr-1/app/static/react;
         try_files $uri $uri/ /index.html;
     }
 
+    # Backend API
     location /api {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket support for real-time features
+    location /socket.io {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
     }
 }
 ```
@@ -723,17 +758,17 @@ DB_PASSWORD=your-secure-production-password
 # Enable security features
 SESSION_COOKIE_SECURE=true
 JWT_COOKIE_SECURE=true
-MAYA_DISABLE_SECURITY=false
 
 # Production URLs
 SUPABASE_URL="https://your-prod-project.supabase.co"
 GOOGLE_CLIENT_ID="your-production-google-client-id"
+FRONTEND_URL="https://your-domain.com"
 ```
 
 ### SSL/TLS Configuration
 
+**Nginx SSL Configuration:**
 ```nginx
-# SSL configuration for nginx
 server {
     listen 443 ssl http2;
     server_name your-domain.com;
@@ -745,9 +780,78 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
     ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
 
     # HSTS
     add_header Strict-Transport-Security "max-age=63072000" always;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    # Frontend
+    location / {
+        root /path/to/registrar-odr-1/app/static/react;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API
+    location /api {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+### Database Migration for Production
+
+```bash
+# Backup existing database
+pg_dump -h localhost -U odr_user odr_system > backup.sql
+
+# Run migrations
+python -c "from app.db_init import initialize_and_populate; initialize_and_populate()"
+```
+
+### Monitoring and Logging
+
+**Systemd Service (Linux):**
+```ini
+[Unit]
+Description=ODR Backend
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/registrar-odr-1
+Environment=PATH=/path/to/registrar-odr-1/.venv/bin
+ExecStart=/path/to/registrar-odr-1/.venv/bin/gunicorn --bind 127.0.0.1:8000 run:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Log Rotation:**
+```bash
+# /etc/logrotate.d/odr
+/path/to/registrar-odr-1/logs/*.log {
+    daily
+    missingok
+    rotate 52
+    compress
+    delaycompress
+    notifempty
+    create 644 www-data www-data
 }
 ```
 
@@ -762,7 +866,7 @@ server {
 - **Domain Restrictions**: Google OAuth restricted to @g.msuiit.edu.ph
 
 ### Database Security
-- **Connection Pooling**: Secure database connections
+- **Connection Management**: Secure database connections
 - **Parameterized Queries**: SQL injection prevention
 - **Input Validation**: Comprehensive input sanitization
 - **Access Controls**: Role-based access control
@@ -940,3 +1044,4 @@ sudo chown -R postgres:postgres /var/lib/postgresql
 [⬆️ Back to Top](#-registrar-online-document-request-odr-system)
 
 </div>
+

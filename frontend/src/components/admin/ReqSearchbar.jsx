@@ -15,17 +15,21 @@ function ReqSearchbar({ onSearch }) {
     };
 
     return (
-            <div className="req-search-bar-container">
-                <img src="/assets/SearchIcon.svg" alt="Search Icon" className="search-icon" />
-                <input
-                    type="text"
-                    className="search-input"
-                    placeholder="Search Request"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                />
-                <button onClick={handleSearch} className="search-button">Search</button>
+            <div className="req-search-bar">
+                <div className="req-search-bar-container">
+                  
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder="Search Request"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                    />
+                </div>
+                 <button onClick={handleSearch} className="search-button">
+                      <img src="/assets/SearchIcon.svg" alt="Search Icon" className="search-icon" />
+                 </button>
             </div>
     );
 }

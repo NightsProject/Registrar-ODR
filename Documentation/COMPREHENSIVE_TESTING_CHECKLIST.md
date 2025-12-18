@@ -1,21 +1,28 @@
+
 # Comprehensive Manual Testing Checklist - Registrar ODR System
 
 ## Table of Contents
 1. [System Overview](#system-overview)
 2. [Prerequisites](#prerequisites)
-3. [User Authentication Flows](#user-authentication-flows)
-4. [Document Request Flows](#document-request-flows)
-5. [Tracking Flows](#tracking-flows)
-6. [Admin Authentication Flows](#admin-authentication-flows)
-7. [Admin Dashboard Flows](#admin-dashboard-flows)
-8. [Request Management Flows](#request-management-flows)
-9. [Document Management Flows](#document-management-flows)
-10. [Settings & Configuration Flows](#settings--configuration-flows)
-11. [Integration Flows](#integration-flows)
-12. [Error Handling & Edge Cases](#error-handling--edge-cases)
-13. [Performance & Security Testing](#performance--security-testing)
-14. [Mobile Responsiveness](#mobile-responsiveness)
-15. [Cross-browser Testing](#cross-browser-testing)
+3. [Environment Setup](#environment-setup)
+4. [User Authentication Flows](#user-authentication-flows)
+5. [Document Request Flows](#document-request-flows)
+
+6. [Tracking Flows](#tracking-flows)
+7. [Admin Authentication Flows](#admin-authentication-flows)
+8. [Admin Dashboard Flows](#admin-dashboard-flows)
+9. [Request Management Flows](#request-management-flows)
+10. [Document Management Flows](#document-management-flows)
+11. [Assignment Management Flows](#assignment-management-flows)
+12. [Settings & Configuration Flows](#settings--configuration-flows)
+13. [Transaction Management Flows](#transaction-management-flows)
+14. [Logging & Monitoring Flows](#logging--monitoring-flows)
+15. [Integration Flows](#integration-flows)
+16. [Error Handling & Edge Cases](#error-handling--edge-cases)
+17. [Performance & Security Testing](#performance--security-testing)
+18. [Mobile Responsiveness](#mobile-responsiveness)
+19. [Cross-browser Testing](#cross-browser-testing)
+20. [Production Readiness](#production-readiness)
 
 ---
 
@@ -49,9 +56,73 @@
 ### Browser Requirements
 - [ ] Chrome (latest version)
 - [ ] Firefox (latest version)
+
 - [ ] Safari (latest version)
 - [ ] Edge (latest version)
 - [ ] Mobile browsers (iOS Safari, Android Chrome)
+
+---
+
+## Environment Setup
+
+### Backend Environment
+- [ ] **ES001**: Backend Server Configuration
+  - [ ] Flask app running on `http://127.0.0.1:8000`
+  - [ ] Database connection established and accessible
+  - [ ] Environment variables configured (.env file)
+  - [ ] CORS properly configured for frontend integration
+  - [ ] Session management working correctly
+
+- [ ] **ES002**: API Health Check
+  - [ ] Backend API responding to health check endpoint
+  - [ ] All API routes accessible and responding
+  - [ ] Database queries executing successfully
+  - [ ] Error handling working properly
+
+### Frontend Environment
+- [ ] **ES003**: Frontend Server Configuration
+  - [ ] React development server running
+  - [ ] Frontend proxy configured to backend
+  - [ ] All frontend routes accessible
+  - [ ] Static assets loading correctly
+
+- [ ] **ES004**: Integration Testing
+  - [ ] Frontend can communicate with backend API
+  - [ ] Authentication flow working end-to-end
+  - [ ] Data submission and retrieval working
+  - [ ] Error handling between frontend and backend
+
+### Database Setup
+- [ ] **ES005**: Database Schema
+  - [ ] All tables created with correct schema
+  - [ ] Foreign key relationships established
+  - [ ] Indexes created for performance
+  - [ ] Default data populated for testing
+
+- [ ] **ES006**: Test Data Preparation
+  - [ ] Sample student accounts created
+  - [ ] Sample admin accounts created with different roles
+  - [ ] Sample documents and requirements created
+  - [ ] Sample requests in various states created
+
+### External Services
+- [ ] **ES007**: Supabase Configuration
+  - [ ] Supabase project accessible
+  - [ ] File storage bucket created and configured
+  - [ ] Public access URLs working
+  - [ ] File upload permissions configured
+
+- [ ] **ES008**: WhatsApp Integration
+  - [ ] WhatsApp API credentials configured
+  - [ ] OTP sending functionality working
+  - [ ] Template messages configured
+  - [ ] Delivery confirmation working
+
+- [ ] **ES009**: Google OAuth (Admin Authentication)
+  - [ ] Google OAuth credentials configured
+  - [ ] Domain restriction set to `@g.msuiit.edu.ph`
+  - [ ] OAuth flow working correctly
+  - [ ] Token validation working
 
 ---
 
@@ -404,6 +475,138 @@
   - [ ] Update admin fee amount
   - [ ] Verify fee calculation updates
   - [ ] Verify fee display updates
+
+
+---
+
+## Assignment Management Flows
+
+### Auto-Assignment System
+- [ ] **AM001**: Load balancing algorithm
+  - [ ] Test auto-assignment distributes requests evenly
+  - [ ] Verify max request limits respected per admin
+  - [ ] Test assignment when some admins are at capacity
+  - [ ] Verify assignment progress tracking updates
+
+- [ ] **AM002**: Assignment notifications
+  - [ ] Verify admins receive notification when assigned
+  - [ ] Check notification content is accurate
+  - [ ] Test notification delivery reliability
+
+### Manual Assignment
+- [ ] **AM003**: Manual assignment interface
+  - [ ] Assign specific requests to specific admins
+  - [ ] Verify assignment restrictions applied
+  - [ ] Test reassignment functionality
+  - [ ] Verify unassignment works correctly
+
+### Assignment Progress Tracking
+- [ ] **AM004**: Progress monitoring
+  - [ ] View individual admin workload
+  - [ ] View overall assignment statistics
+  - [ ] Verify completion percentages accurate
+  - [ ] Test max request limit enforcement
+
+---
+
+## Transaction Management Flows
+
+### Transaction Listing
+- [ ] **TM001**: Transaction list display
+  - [ ] View paginated transaction history
+  - [ ] Verify transaction data accuracy
+  - [ ] Test search and filtering functionality
+  - [ ] Verify transaction status indicators
+
+### Transaction Summary
+- [ ] **TM002**: Summary statistics
+  - [ ] Verify total revenue calculations
+  - [ ] Verify daily/weekly/monthly summaries
+  - [ ] Test date range filtering
+  - [ ] Verify summary accuracy
+
+### Payment Integration
+- [ ] **TM003**: Payment processing
+  - [ ] Test Maya payment gateway integration
+  - [ ] Verify payment status updates
+  - [ ] Test webhook handling
+  - [ ] Verify payment confirmation process
+
+---
+
+## Logging & Monitoring Flows
+
+### System Logging
+- [ ] **LM001**: Log generation
+  - [ ] Verify admin actions are logged
+  - [ ] Verify system errors are logged
+  - [ ] Verify user activities are tracked
+  - [ ] Check log format and completeness
+
+- [ ] **LM002**: Log viewing interface
+  - [ ] Access system logs through admin interface
+  - [ ] Test log filtering and search
+  - [ ] Verify log timestamps are accurate
+  - [ ] Test log export functionality
+
+### Monitoring & Alerts
+- [ ] **LM003**: System health monitoring
+  - [ ] Monitor API response times
+  - [ ] Track database performance
+  - [ ] Monitor file upload success rates
+  - [ ] Check external service availability
+
+---
+
+## Production Readiness
+
+### Deployment Checklist
+- [ ] **PR001**: Environment Configuration
+  - [ ] Production database configured and secured
+  - [ ] Environment variables properly set
+  - [ ] SSL certificates installed and configured
+  - [ ] CORS settings appropriate for production
+  - [ ] Session management secure for production
+
+- [ ] **PR002**: Security Hardening
+  - [ ] JWT secret keys secure and unique
+  - [ ] Admin authentication properly secured
+  - [ ] File upload restrictions enforced
+  - [ ] Input validation comprehensive
+  - [ ] SQL injection protections in place
+
+- [ ] **PR003**: Performance Optimization
+  - [ ] Database indexes optimized
+  - [ ] Static files properly served
+  - [ ] API response times acceptable
+  - [ ] File upload performance adequate
+  - [ ] Pagination working efficiently
+
+### Backup & Recovery
+- [ ] **PR004**: Data Backup
+  - [ ] Database backup procedures tested
+  - [ ] File storage backup configured
+  - [ ] Backup restoration tested
+  - [ ] Backup schedule established
+
+- [ ] **PR005**: Disaster Recovery
+  - [ ] Recovery procedures documented
+  - [ ] Recovery time objectives defined
+  - [ ] Recovery point objectives defined
+  - [ ] Emergency contacts established
+
+### Monitoring & Maintenance
+- [ ] **PR006**: Production Monitoring
+  - [ ] Application performance monitoring configured
+  - [ ] Error tracking and alerting setup
+  - [ ] Uptime monitoring enabled
+  - [ ] Log aggregation configured
+
+- [ ] **PR007**: Maintenance Procedures
+  - [ ] Update procedures documented
+  - [ ] Security update process defined
+  - [ ] Database maintenance procedures established
+  - [ ] User support procedures documented
 
 ---
 

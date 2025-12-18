@@ -7,11 +7,14 @@ The Online Document Request (ODR) System API provides endpoints for managing doc
 - **Users**: Students and outsiders who can make document requests
 - **Admins**: System administrators who manage requests, documents, and users
 
+
 ## Base URL
 
 ```
-http://localhost:8000
+http://127.0.0.1:8000
 ```
+
+**Note**: The frontend is configured with a proxy to `http://127.0.0.1:8000`, so API calls from the frontend will be made to the same domain.
 
 ## Authentication
 
@@ -77,6 +80,7 @@ Verify student ID and initiate OTP process.
 }
 ```
 
+
 ### POST `/user/authentication/check-name`
 Verify student name and initiate OTP process (alternative method).
 
@@ -99,6 +103,15 @@ Verify student name and initiate OTP process (alternative method).
 }
 ```
 
+**Response (Not Found - 404):**
+```json
+{
+    "status": "not_found",
+    "message": "Student name not found in records"
+}
+```
+
+
 ### POST `/user/authentication/resend-otp`
 Resend OTP to user's WhatsApp number.
 
@@ -110,6 +123,23 @@ Resend OTP to user's WhatsApp number.
     "masked_phone": "1234"
 }
 ```
+
+**Response (Error - 400):**
+```json
+{
+    "error": "No active session",
+    "message": "No active authentication session found"
+}
+```
+
+**Response (Error - 429):**
+```json
+{
+    "error": "Too Many Requests",
+    "message": "OTP resend limit exceeded. Please try again later."
+}
+```
+
 
 ### POST `/user/authentication/verify-otp`
 Verify OTP and complete authentication.
@@ -128,6 +158,22 @@ Verify OTP and complete authentication.
     "role": "user",
     "valid": true,
     "has_liability": false
+}
+```
+
+**Response (Error - 400):**
+```json
+{
+    "error": "Invalid OTP",
+    "message": "The OTP code provided is incorrect or has expired"
+}
+```
+
+**Response (Error - 429):**
+```json
+{
+    "error": "Too Many Attempts",
+    "message": "Maximum OTP verification attempts exceeded. Please request a new OTP."
 }
 ```
 
@@ -232,6 +278,7 @@ Get requirements for selected documents.
 }
 ```
 
+
 ### POST `/user/request/api/complete-request`
 Complete request submission process.
 
@@ -266,6 +313,31 @@ Complete request submission process.
     "request_id": "REQ202401001",
     "notification": "Your request has been completed successfully.",
     "whatsapp_status": "success"
+}
+```
+
+**Response (Error - 400):**
+```json
+{
+    "error": "Validation Error",
+    "message": "Required fields missing or invalid",
+    "details": ["student_info.full_name is required", "documents cannot be empty"]
+}
+```
+
+**Response (Error - 409):**
+```json
+{
+    "error": "Active Request Exists",
+    "message": "You already have an active request. Please wait for completion before submitting a new request."
+}
+```
+
+**Response (Error - 500):**
+```json
+{
+    "error": "Internal Server Error",
+    "message": "Failed to submit request. Please try again later."
 }
 ```
 
@@ -415,6 +487,7 @@ Mark specific documents as paid.
 
 ## Admin Authentication API
 
+
 ### POST `/api/admin/google-login`
 Google OAuth login for admins.
 
@@ -430,6 +503,30 @@ Google OAuth login for admins.
 {
     "message": "Admin login successful",
     "role": "admin"
+}
+```
+
+**Response (Error - 400):**
+```json
+{
+    "error": "Invalid Token",
+    "message": "Google OAuth token is invalid or expired"
+}
+```
+
+**Response (Error - 403):**
+```json
+{
+    "error": "Access Denied",
+    "message": "Access restricted to @g.msuiit.edu.ph domain email addresses only"
+}
+```
+
+**Response (Error - 500):**
+```json
+{
+    "error": "Internal Server Error",
+    "message": "Failed to process Google OAuth login"
 }
 ```
 
@@ -472,6 +569,7 @@ Get admin dashboard statistics and notifications.
 
 ## Admin Request Management API
 
+
 ### GET `/api/admin/requests`
 Get paginated requests with filtering options.
 
@@ -488,6 +586,23 @@ Get paginated requests with filtering options.
 {
     "requests": [...],
     "total": 150
+}
+```
+
+**Response (Error - 400):**
+```json
+{
+    "error": "Invalid Parameters",
+    "message": "Invalid query parameters provided",
+    "details": ["Invalid page number", "Invalid limit value"]
+}
+```
+
+**Response (Error - 401):**
+```json
+{
+    "error": "Unauthorized",
+    "message": "Admin authentication required"
 }
 ```
 

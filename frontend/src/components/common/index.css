@@ -12,6 +12,7 @@
     --color-button-red: #B81D23;
     --color-button-gray: #EAEAEA;
     --color-button-primary-hover: #80A2FF;
+    --color-button-default-hover: #F3F4F6;
     --color-button-destructive-default: #EA3D2F;
     --color-button-destructive-hover: #FEE4E3;
     --color-button-success-default: #4ADE80;
@@ -27,6 +28,10 @@
     /* Input Border Color */
     --color-input-border: #6E6E73;
 
+    /* Box Shadow */
+
+    --shadow-primary: 2px 4px 12px #00000014;
+
     /* Text Colors */
     --color-white: #FFFFFF;
     --color-black: #1D1D1F;
@@ -40,6 +45,7 @@
   --font-size-regular: 16px;
   --font-size-subtext: 14px;
   --font-weight-regular: 500;
+  --font-weight-bold: 700;
 }
 
 @keyframes shake {

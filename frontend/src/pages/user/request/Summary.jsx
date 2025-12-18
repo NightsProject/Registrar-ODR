@@ -18,7 +18,8 @@ function Summary({
   paymentCompleted = false,
   adminFee = 0,
   onNext = () => {},
-  onBack = () => {},q
+  onBack = () => {},q, 
+  showToast
 }) {
   const [completing, setCompleting] = useState(false);
 
@@ -63,7 +64,7 @@ function Summary({
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       } catch (error) {
         console.error('Error viewing authorization letter:', error);
-        alert('Error opening authorization letter');
+        showToast('Error opening authorization letter');
       }
     }
   };
@@ -115,7 +116,7 @@ function Summary({
     } catch (error) {
       console.error('Error completing request:', error);
       setCompleting(false);
-      alert('Error completing request. Please try again.');
+      showToast('Error completing request. Please try again.', 'error');
     }
   };
 

@@ -6,8 +6,6 @@ import RequestPopup from "../../../components/user/RequestPopup";
 import CustomDocumentModal from "../../../components/user/CustomDocumentModal";
 import SearchBar from "../../../components/common/SearchBar";
 
-
-
 function Documents({ availableDocuments = [], selectedDocs, setSelectedDocs, onNext, steps: parentSteps, currentStepIndex: parentStepIndex }) {
   const [showPopup, setShowPopup] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);

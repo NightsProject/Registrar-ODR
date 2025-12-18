@@ -5,7 +5,7 @@ import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ContentBox from "../../../components/user/ContentBox";
 import ButtonLink from "../../../components/common/ButtonLink";
 
-function RequestList({ selectedDocs = [], setSelectedDocs, quantities = {}, setQuantities, onBack, onProceed}) {
+function RequestList({ selectedDocs = [], setSelectedDocs, quantities = {}, setQuantities, onBack, onProceed, showToast }) {
   const [loading, setLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(true);
   const [error, setError] = useState("");

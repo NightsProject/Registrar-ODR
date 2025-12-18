@@ -1,14 +1,235 @@
 from flask import g
 from collections import defaultdict
+from psycopg2 import extras
 
 class ManageRequestModel:
 
+
     @staticmethod
-    def fetch_requests(page=1, limit=20, search=None, admin_id=None, college_code=None, requester_type=None, has_others_docs=None):
+    def fetch_requests(
+        page=1,
+        limit=20,
+        search=None,
+        admin_id=None,
+        college_code=None,
+        requester_type=None,
+        has_others_docs=None
+    ):
         """
-        Fetch paginated requests with full details.
-        If admin_id is provided, only fetch requests assigned to that admin.
-        Supports filtering by college_code, requester_type (student/outsider), and has_others_docs.
+        OPTIMIZED & SAFE: Paginated request fetch with JSON aggregation.
+        Fully aligned with schema and resilient to SELECT changes.
+        """
+        conn = g.db_conn
+        cur = conn.cursor(cursor_factory=extras.RealDictCursor)
+
+        try:
+            offset = (page - 1) * limit
+            params = []
+            where_clauses = []
+
+            if admin_id:
+                where_clauses.append("ra.admin_id = %s")
+                params.append(admin_id)
+
+            if search:
+                where_clauses.append("""
+                    (
+                        r.full_name ILIKE %s OR
+                        r.student_id ILIKE %s OR
+                        r.email ILIKE %s OR
+                        r.contact_number ILIKE %s OR
+                        CAST(r.request_id AS TEXT) ILIKE %s
+                    )
+                """)
+                search_param = f"%{search}%"
+                params.extend([search_param] * 5)
+
+            if college_code:
+                where_clauses.append("r.college_code = %s")
+                params.append(college_code)
+
+            if requester_type == "outsider":
+                where_clauses.append("EXISTS (SELECT 1 FROM auth_letters WHERE id = r.request_id)")
+            elif requester_type == "student":
+                where_clauses.append("NOT EXISTS (SELECT 1 FROM auth_letters WHERE id = r.request_id)")
+
+            if has_others_docs is not None:
+                clause = "EXISTS" if has_others_docs else "NOT EXISTS"
+                where_clauses.append(f"""
+                    {clause} (
+                        SELECT 1 FROM others_docs od
+                        WHERE od.request_id = r.request_id
+                    )
+                """)
+
+            where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+            # ----------------------------
+            # MAIN QUERY
+            # ----------------------------
+            cur.execute(f"""
+                WITH request_data AS (
+                    SELECT
+                        r.request_id,
+                        r.student_id,
+                        r.full_name,
+                        r.contact_number,
+                        r.email,
+                        r.preferred_contact,
+                        r.status,
+                        r.requested_at,
+                        r.remarks,
+                        r.total_cost,
+                        r.payment_status,
+                        ra.admin_id AS assigned_admin_id,
+                        a.profile_picture AS assigned_admin_profile_picture
+                    FROM requests r
+                    LEFT JOIN request_assignments ra ON r.request_id = ra.request_id
+                    LEFT JOIN admins a ON ra.admin_id = a.email
+                    {where_sql}
+                    ORDER BY r.requested_at DESC
+                    LIMIT %s OFFSET %s
+                ),
+
+                documents_data AS (
+                    SELECT
+                        rd.request_id,
+                        json_agg(
+                            json_build_object(
+                                'doc_id', rd.doc_id,
+                                'name', d.doc_name,
+                                'quantity', rd.quantity,
+                                'cost', d.cost,
+                                'is_done', rd.is_done
+                            )
+                            ORDER BY d.doc_name
+                        ) AS documents
+                    FROM request_documents rd
+                    JOIN documents d ON d.doc_id = rd.doc_id
+                    WHERE rd.request_id IN (SELECT request_id FROM request_data)
+                    GROUP BY rd.request_id
+                ),
+
+                requirements_data AS (
+                    SELECT
+                        rd.request_id,
+                        json_agg(DISTINCT req.requirement_name) AS requirements
+                    FROM request_documents rd
+                    JOIN document_requirements dr ON dr.doc_id = rd.doc_id
+                    JOIN requirements req ON req.req_id = dr.req_id
+                    WHERE rd.request_id IN (SELECT request_id FROM request_data)
+                    GROUP BY rd.request_id
+                ),
+
+                files_data AS (
+                    SELECT
+                        rrl.request_id,
+                        json_agg(
+                            json_build_object(
+                                'requirement', req.requirement_name,
+                                'file_path', rrl.file_path
+                            )
+                            ORDER BY rrl.uploaded_at
+                        ) AS uploaded_files
+                    FROM request_requirements_links rrl
+                    JOIN requirements req ON req.req_id = rrl.requirement_id
+                    WHERE rrl.request_id IN (SELECT request_id FROM request_data)
+                    GROUP BY rrl.request_id
+                ),
+
+                recent_logs AS (
+                    SELECT DISTINCT ON (request_id)
+                        request_id,
+                        admin_id,
+                        action,
+                        details,
+                        timestamp
+                    FROM logs
+                    WHERE request_id IN (SELECT request_id FROM request_data)
+                    ORDER BY request_id, timestamp DESC
+                )
+
+                SELECT
+                    rd.*,
+                    COALESCE(d.documents, '[]'::json) AS documents,
+                    COALESCE(req.requirements, '[]'::json) AS requirements,
+                    COALESCE(f.uploaded_files, '[]'::json) AS uploaded_files,
+                    l.admin_id AS log_admin_id,
+                    l.action AS log_action,
+                    l.details AS log_details,
+                    l.timestamp AS log_timestamp
+                FROM request_data rd
+                LEFT JOIN documents_data d ON rd.request_id = d.request_id
+                LEFT JOIN requirements_data req ON rd.request_id = req.request_id
+                LEFT JOIN files_data f ON rd.request_id = f.request_id
+                LEFT JOIN recent_logs l ON rd.request_id = l.request_id
+                ORDER BY rd.requested_at DESC
+            """, params + [limit, offset])
+
+            rows = cur.fetchall()
+
+            # ----------------------------
+            # TOTAL COUNT
+            # ----------------------------
+            cur.execute(f"""
+                SELECT COUNT(*)
+                FROM requests r
+                LEFT JOIN request_assignments ra ON r.request_id = ra.request_id
+                {where_sql}
+            """, params)
+
+            total = cur.fetchone()["count"]
+
+            # ----------------------------
+            # FINAL ASSEMBLY (SAFE)
+            # ----------------------------
+            results = []
+            for r in rows:
+                recent_log = None
+                if r["log_admin_id"]:
+                    recent_log = {
+                        "admin_id": r["log_admin_id"],
+                        "action": r["log_action"],
+                        "details": r["log_details"],
+                        "timestamp": r["log_timestamp"].strftime("%Y-%m-%d %H:%M:%S")
+                        if r["log_timestamp"] else None
+                    }
+
+                results.append({
+                    "request_id": r["request_id"],
+                    "student_id": r["student_id"],
+                    "full_name": r["full_name"],
+                    "contact_number": r["contact_number"],
+                    "email": r["email"],
+                    "preferred_contact": r["preferred_contact"],
+                    "status": r["status"],
+                    "requested_at": r["requested_at"].strftime("%Y-%m-%d %H:%M:%S")
+                    if r["requested_at"] else None,
+                    "remarks": r["remarks"],
+                    "total_cost": r["total_cost"],
+                    "payment_status": r["payment_status"],
+                    "assigned_admin_id": r["assigned_admin_id"],
+                    "assigned_admin_profile_picture": r["assigned_admin_profile_picture"],
+                    "documents": r["documents"],
+                    "requirements": r["requirements"],
+                    "uploaded_files": r["uploaded_files"],
+                    "recent_log": recent_log
+                })
+
+            return {"requests": results, "total": total}
+
+        except Exception as e:
+            print(f"Error in optimized fetch_requests: {e}")
+            return ManageRequestModel.fetch_requests_original(
+                page, limit, search, admin_id, college_code, requester_type, has_others_docs
+            )
+        finally:
+            cur.close()
+            
+    @staticmethod
+    def fetch_requests_original(page=1, limit=20, search=None, admin_id=None, college_code=None, requester_type=None, has_others_docs=None):
+        """
+        Original method kept as fallback if optimized version fails.
         """
         conn = g.db_conn
         cur = conn.cursor()
@@ -24,7 +245,6 @@ class ManageRequestModel:
             if admin_id:
                 where_clauses.append("ra.admin_id = %s")
                 params.append(admin_id)
-
 
             if search:
                 where_clauses.append("(r.full_name ILIKE %s OR r.student_id ILIKE %s OR r.email ILIKE %s OR r.contact_number ILIKE %s OR r.request_id ILIKE %s)")
@@ -57,8 +277,6 @@ class ManageRequestModel:
             else:
                 join_assignments = ""
 
-
-
             cur.execute(f"""
                 SELECT r.request_id, r.student_id, r.full_name, r.contact_number, r.email,
                        r.preferred_contact, r.status, r.requested_at,r.remarks,
@@ -90,8 +308,6 @@ class ManageRequestModel:
                 {where_sql}
             """, params)
             total_count = cur.fetchone()[0]
-
-
 
             # --------------------------
             # 4. Bulk fetch documents
@@ -150,7 +366,6 @@ class ManageRequestModel:
                     "details": details,
                     "timestamp": ts.strftime("%Y-%m-%d %H:%M:%S") if ts else None
                 }
-
 
             # --------------------------
             # 8. Assemble results
@@ -644,14 +859,182 @@ class ManageRequestModel:
             ]
         finally:
             cur.close()
-
+    
     @staticmethod
     def get_request_by_id(request_id):
-        """Fetch a single request by ID with all details."""
+        """
+        OPTIMIZED: Fetch a single request by ID with all details using JSON aggregation.
+        Fully aligned with current PostgreSQL schema.
+        """
+        conn = g.db_conn
+        cur = conn.cursor(cursor_factory=extras.RealDictCursor)
+
+        try:
+            cur.execute("""
+                WITH request_base AS (
+                    SELECT
+                        r.request_id,
+                        r.student_id,
+                        r.full_name,
+                        r.contact_number,
+                        r.email,
+                        r.preferred_contact,
+                        r.status,
+                        r.requested_at,
+                        r.remarks,
+                        r.total_cost,
+                        r.payment_status,
+                        r.college_code,
+                        r.order_type,
+                        r.payment_date,
+                        r.payment_reference,
+                        r.payment_type
+                    FROM requests r
+                    WHERE r.request_id = %s
+                ),
+
+                auth_letter_data AS (
+                    SELECT
+                        al.id AS request_id,
+                        'Outsider' AS requester_type,
+                        json_build_object(
+                            'id', al.id,
+                            'file_url', al.file_url,
+                            'requester_name', al.requester_name,
+                            'number', al.number
+                        ) AS authorization_letter
+                    FROM auth_letters al
+                    WHERE al.id = %s
+                ),
+
+                documents_data AS (
+                    SELECT
+                        rd.request_id,
+                        json_agg(
+                            json_build_object(
+                                'doc_id', rd.doc_id,
+                                'name', d.doc_name,
+                                'quantity', rd.quantity,
+                                'cost', d.cost,
+                                'requires_payment_first', d.requires_payment_first,
+                                'is_done', rd.is_done
+                            )
+                            ORDER BY d.doc_name
+                        ) AS documents
+                    FROM request_documents rd
+                    JOIN documents d ON d.doc_id = rd.doc_id
+                    WHERE rd.request_id = %s
+                    GROUP BY rd.request_id
+                ),
+
+                requirements_data AS (
+                    SELECT
+                        t.request_id,
+                        json_agg(t.requirement_name ORDER BY t.requirement_name) AS requirements,
+                        json_agg(
+                            json_build_object(
+                                'req_id', t.req_id,
+                                'name', t.requirement_name
+                            )
+                            ORDER BY t.requirement_name
+                        ) AS all_requirements
+                    FROM (
+                        SELECT DISTINCT
+                            rd.request_id,
+                            r.req_id,
+                            r.requirement_name
+                        FROM request_documents rd
+                        JOIN document_requirements dr ON dr.doc_id = rd.doc_id
+                        JOIN requirements r ON r.req_id = dr.req_id
+                        WHERE rd.request_id = %s
+                    ) t
+                    GROUP BY t.request_id
+                ),
+
+                uploaded_files_data AS (
+                    SELECT
+                        rrl.request_id,
+                        json_agg(
+                            json_build_object(
+                                'requirement', req.requirement_name,
+                                'file_path', rrl.file_path
+                            )
+                            ORDER BY rrl.uploaded_at
+                        ) AS uploaded_files
+                    FROM request_requirements_links rrl
+                    JOIN requirements req ON req.req_id = rrl.requirement_id
+                    WHERE rrl.request_id = %s
+                    GROUP BY rrl.request_id
+                ),
+
+                others_docs_data AS (
+                    SELECT
+                        od.request_id,
+                        json_agg(
+                            json_build_object(
+                                'id', od.id,
+                                'name', od.document_name,
+                                'description', od.document_description,
+                                'created_at', to_char(od.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+                                'is_done', od.is_done
+                            )
+                            ORDER BY od.created_at
+                        ) AS others_documents
+                    FROM others_docs od
+                    WHERE od.request_id = %s
+                    GROUP BY od.request_id
+                )
+
+                SELECT
+                    rb.*,
+                    COALESCE(auth.requester_type, 'Student') AS requester_type,
+                    auth.authorization_letter,
+                    COALESCE(doc.documents, '[]'::json) AS documents,
+                    COALESCE(req.requirements, '[]'::json) AS requirements,
+                    COALESCE(req.all_requirements, '[]'::json) AS all_requirements,
+                    COALESCE(files.uploaded_files, '[]'::json) AS uploaded_files,
+                    COALESCE(others.others_documents, '[]'::json) AS others_documents
+                FROM request_base rb
+                LEFT JOIN auth_letter_data auth ON auth.request_id = rb.request_id
+                LEFT JOIN documents_data doc ON doc.request_id = rb.request_id
+                LEFT JOIN requirements_data req ON req.request_id = rb.request_id
+                LEFT JOIN uploaded_files_data files ON files.request_id = rb.request_id
+                LEFT JOIN others_docs_data others ON others.request_id = rb.request_id
+            """, (request_id,) * 6)
+
+            result = cur.fetchone()
+            if not result:
+                return None
+
+            request_data = dict(result)
+
+            # Normalize datetime
+            if request_data.get("requested_at"):
+                request_data["requested_at"] = request_data["requested_at"].strftime("%Y-%m-%d %H:%M:%S")
+
+            # Attach logs & changes
+            recent_logs = ManageRequestModel.get_recent_logs_for_request(request_id, limit=1)
+            request_data["recent_log"] = recent_logs[0] if recent_logs else None
+            request_data["changes"] = ManageRequestModel.get_request_changes(request_id)
+
+            return request_data
+
+        except Exception as e:
+            print(f"Error in optimized get_request_by_id: {e}")
+            return ManageRequestModel.get_request_by_id_original(request_id)
+
+        finally:
+            cur.close()
+
+    @staticmethod
+    def get_request_by_id_original(request_id):
+        """
+        Original method kept as fallback if optimized version fails.
+        """
         conn = g.db_conn
         cur = conn.cursor()
-        try:
 
+        try:
             cur.execute("""
                 SELECT request_id, student_id, full_name, contact_number, email, preferred_contact, status, requested_at, remarks, total_cost, payment_status, college_code, order_type, payment_date, payment_reference, payment_type
                 FROM requests
@@ -661,7 +1044,6 @@ class ManageRequestModel:
 
             if not req:
                 return None
-
 
             request_data = {
                 "request_id": req[0],
@@ -701,8 +1083,6 @@ class ManageRequestModel:
                 request_data["requester_type"] = "Student"
                 request_data["authorization_letter"] = None
 
-
-
             # Fetch requested documents with cost and payment requirements
             cur.execute("""
                 SELECT rd.doc_id, d.doc_name, rd.quantity, d.cost, d.requires_payment_first, rd.is_done
@@ -726,7 +1106,6 @@ class ManageRequestModel:
             request_data["requirements"] = [req[1] for req in reqs]
             request_data["all_requirements"] = [{"req_id": req[0], "name": req[1]} for req in reqs]
 
-
             # Fetch uploaded files
             cur.execute("""
                 SELECT r.requirement_name, rrl.file_path
@@ -736,7 +1115,6 @@ class ManageRequestModel:
             """, (request_id,))
             files = cur.fetchall()
             request_data["uploaded_files"] = [{"requirement": file[0], "file_path": file[1]} for file in files]
-
 
             # Fetch others documents (custom documents)
             cur.execute("""
@@ -756,7 +1134,6 @@ class ManageRequestModel:
                 } 
                 for doc in others_docs
             ]
-
 
             # Fetch recent logs
             recent_logs = ManageRequestModel.get_recent_logs_for_request(request_id, limit=1)

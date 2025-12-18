@@ -16,7 +16,8 @@ const ProtectedRoute = ({
   requiredPermissions = [], 
   redirectTo = '/admin/waiting' 
 }) => {
-  const { user, role, isLoading, isAuthenticated, canAccessRoute } = useAuth();
+
+  const { user, role, isLoading, isAuthenticated, canAccessRoute, hasPermission } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking authentication
@@ -46,15 +47,19 @@ const ProtectedRoute = ({
     return <Navigate to={accessiblePath} state={{ from: location }} replace />;
   }
 
+
   // Check individual permissions if specified
   if (requiredPermissions.length > 0) {
-    const hasAllPermissions = requiredPermissions.every(permission => 
-      // We'll need to implement hasPermission in AuthContext
-      // For now, we'll use canAccessRoute as a basic check
-      canAccessRoute(getPathForPermission(permission))
-    );
+    // Check if user has ANY of the required permissions (OR logic)
+    const hasAnyPermission = requiredPermissions.some(permission => {
+      if (permission === 'view_request_details') {
+        // Special handling for view_request_details permission
+        return hasPermission('view_request_details');
+      }
+      return canAccessRoute(getPathForPermission(permission));
+    });
 
-    if (!hasAllPermissions) {
+    if (!hasAnyPermission) {
       const accessiblePath = getFirstAccessiblePath(role);
       return <Navigate to={accessiblePath} state={{ from: location }} replace />;
     }

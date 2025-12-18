@@ -270,9 +270,6 @@ class Request:
             cur.close()
             db_pool.putconn(conn)
 
-
-
-
     @staticmethod
     def get_active_requests_by_student(student_id):
         """
@@ -290,16 +287,8 @@ class Request:
         cur = conn.cursor()
 
         try:
-
-
-
-
-
-
-
-
-
-            # Fetch all active requests for the student with documents and custom documents
+            # OPTIMIZED: Single query with LEFT JOIN to fetch all data at once
+            # Eliminates N+1 query problem by fetching custom documents in the main query
             cur.execute("""
                 SELECT 
                     r.request_id,
@@ -309,12 +298,9 @@ class Request:
                     r.requested_at,
                     r.college_code,
                     COALESCE(doc_docs.documents, 'No documents') as documents,
-                    COALESCE(doc_docs.regular_doc_count, 0) as regular_doc_count
+                    COALESCE(doc_docs.regular_doc_count, 0) as regular_doc_count,
+                    COALESCE(custom_docs.custom_documents_json, '[]'::json) as custom_documents
                 FROM requests r
-
-
-
-
 
                 LEFT JOIN (
                     SELECT 
@@ -329,41 +315,38 @@ class Request:
                     GROUP BY rd.request_id
                 ) doc_docs ON r.request_id = doc_docs.request_id
 
+                LEFT JOIN (
+                    SELECT 
+                        request_id,
+                        json_agg(
+                            json_build_object(
+                                'id', id,
+                                'doc_name', document_name,
+                                'description', document_description,
+                                'created_at', to_char(created_at, 'YYYY-MM-DD HH24:MI:SS')
+                            )
+                        ) as custom_documents_json
+                    FROM others_docs
+                    GROUP BY request_id
+                ) custom_docs ON r.request_id = custom_docs.request_id
+
                 WHERE r.student_id = %s AND r.status != 'RELEASED'
                 ORDER BY r.requested_at DESC
             """, (student_id,))
             
             rows = cur.fetchall()
-            
             active_requests = []
+            
             for row in rows:
                 request_id = row[0]
                 
-                # Fetch custom documents for this request
-                cur.execute("""
-                    SELECT id, document_name, document_description, created_at
-                    FROM others_docs
-                    WHERE request_id = %s
-                    ORDER BY created_at ASC
-                """, (request_id,))
-                
-                custom_docs_rows = cur.fetchall()
-                custom_documents = []
-                
-                for custom_row in custom_docs_rows:
-                    custom_documents.append({
-                        "id": custom_row[0],
-                        "doc_name": custom_row[1],
-                        "description": custom_row[2],
-                        "created_at": custom_row[3].strftime("%Y-%m-%d %H:%M:%S") if custom_row[3] else ""
-                    })
-                
+                # Parse custom documents from JSON
+                custom_documents = row[8] if row[8] and row[8] != '[]' else []
+                custom_doc_count = len(custom_documents) if isinstance(custom_documents, list) else 0
 
                 # Calculate total document count (regular + custom)
                 regular_doc_count = row[7] or 0
-                custom_doc_count = len(custom_documents)
-                total_doc_count = regular_doc_count + custom_doc_count
-                
+                total_doc_count = int(regular_doc_count) + custom_doc_count
 
                 request_data = {
                     "request_id": row[0],
@@ -373,12 +356,11 @@ class Request:
                     "requested_at": row[4].strftime("%Y-%m-%d %H:%M:%S") if row[4] else "",
                     "college_code": row[5],
                     "documents": row[6] or "No documents",
-                    "document_count": total_doc_count,  # Use total count (regular + custom)
-                    "regular_doc_count": int(regular_doc_count),  # Regular documents count only
+                    "document_count": total_doc_count,
+                    "regular_doc_count": int(regular_doc_count),
                     "custom_documents": custom_documents
                 }
                 active_requests.append(request_data)
-            
 
             return active_requests
             

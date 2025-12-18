@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCSRFToken } from "../../../utils/csrf";
+import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import RequestViewPage_Pending from "./RequestViewPage_Pending";
 import RequestViewPage_InProgress from "./RequestViewPage_InProgress";
+import Toast from "../../../components/common/Toast";
 import "./RequestViewPage.css";
 
 const RequestViewPage_Flow = () => {
@@ -13,6 +16,10 @@ const RequestViewPage_Flow = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("");
+  const [toast, setToast] = useState({ show: false, message: "", variant: "info" });
+  const showToast = (message, variant = "info") => {
+    setToast({ show: true, message, variant });
+  };
 
   useEffect(() => {
     const fetchRequest = async () => {
@@ -41,24 +48,22 @@ const RequestViewPage_Flow = () => {
 
     fetchRequest();
   }, [requestId]);
-
-
-
+  
   // Status mapping - determine which component to load based on status
   const getStatusComponent = (status, requestData, refreshFunction) => {
     const normalizedStatus = status;
     
     switch (normalizedStatus) {
       case "PENDING":
-        return <RequestViewPage_Pending request={requestData} onRefresh={refreshFunction} />;
+        return <RequestViewPage_Pending request={requestData} onRefresh={refreshFunction} showToast={showToast} />;
       
       case "IN-PROGRESS":
-        return <RequestViewPage_InProgress request={requestData} onRefresh={refreshFunction} />;
-      
+        return <RequestViewPage_InProgress request={requestData} onRefresh={refreshFunction} showToast={showToast} />;
+
       default:
         // Default to pending component if status is unknown
-        return <RequestViewPage_InProgress request={requestData} onRefresh={refreshFunction} />; // Can use same component with different styling
-      
+        return <RequestViewPage_InProgress request={requestData} onRefresh={refreshFunction} showToast={showToast} />; // Can use same component with different styling
+
     }
   };
 
@@ -94,6 +99,12 @@ const RequestViewPage_Flow = () => {
 
   return (
     <div className="request-flow-container">
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        variant={toast.variant}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
 
       {/* Dynamic component loading based on status */}
       <div className="request-content">

@@ -9,6 +9,7 @@ import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import RequirementsPopup from "../../../components/admin/RequirementsPopup";
 import HidePopup from "../../../components/admin/HideDocPopup";
 import CantDeleteDocPopup from "../../../components/admin/CantDeleteDocPopup";
+import { getCSRFToken } from "../../../utils/csrf";
 
 const CACHE_KEY = "documents_data_cache";
 
@@ -53,9 +54,17 @@ function Documents() {
     setShowDeletePopup(false);
   };
 
+
   const checkDocumentExists = async (doc_id) => {
     try {
-      const res = await fetch(`/admin/check-doc-exist/${doc_id}`);
+      const res = await fetch(`/admin/check-doc-exist/${doc_id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCSRFToken(),
+        },
+        credentials: 'include',
+      });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "Error checking document");
@@ -67,10 +76,18 @@ function Documents() {
     }
   };
 
+
   const handleDelete = async (docId) => {
     try {
       setLoading(true);
-      const res = await fetch(`/admin/delete-document/${docId}`, { method: "DELETE" });
+      const res = await fetch(`/admin/delete-document/${docId}`, { 
+        method: "DELETE",
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCSRFToken(),
+        },
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error("Failed to delete document");
 
       await fetchDocuments();
@@ -87,10 +104,18 @@ function Documents() {
     setShowPopup(true);
   };
 
+
   const handleHide = async (docId) => {
     try {
       setLoading(true);
-      const res = await fetch(`/admin/toggle-hide-document/${docId}`, { method: "PATCH" });
+      const res = await fetch(`/admin/toggle-hide-document/${docId}`, { 
+        method: "PATCH",
+        headers: {
+          'Content-Type': 'application/json',
+          "X-CSRF-TOKEN": getCSRFToken(),
+        },
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error("Failed to toggle hide");
 
       await fetchDocuments(); // refresh to get updated hidden status
@@ -121,10 +146,33 @@ function Documents() {
   try {
     if (!cachedData) setLoading(true);
 
+
+    const csrfToken = getCSRFToken();
     const [docsRes, reqRes, joinRes] = await Promise.all([
-      fetch("/admin/get-documents"),
-      fetch("/admin/get-document-requirements"),
-      fetch("/admin/get-documents-with-requirements")
+      fetch("/admin/get-documents", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        credentials: 'include',
+      }),
+      fetch("/admin/get-document-requirements", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        credentials: 'include',
+      }),
+      fetch("/admin/get-documents-with-requirements", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        credentials: 'include',
+      })
     ]);
 
     const documentsData = await docsRes.json();

@@ -199,7 +199,11 @@ def ready_request_documents_table():
    """
    execute_query(alter_query)
 
-
+    # Add is_done column if it doesn't exist
+   alter_query = """
+   ALTER TABLE request_documents ADD COLUMN IF NOT EXISTS payment_date TIMESTAMP
+   """
+   execute_query(alter_query)
 
 
 #mapping table between requests and requirements with uploaded file paths
@@ -216,6 +220,7 @@ def ready_request_requirements_links_table():
    execute_query(query)
 
 
+
 def ready_logs_table():
    query = """
    CREATE TABLE IF NOT EXISTS logs (
@@ -223,15 +228,37 @@ def ready_logs_table():
        admin_id VARCHAR(100) NOT NULL,
        action VARCHAR(255) NOT NULL,
        details TEXT,
-       timestamp TIMESTAMP DEFAULT NOW()
+       timestamp TIMESTAMP DEFAULT NOW(),
+       request_id VARCHAR(15) DEFAULT 'none',
+       log_level VARCHAR(20) DEFAULT 'INFO',
+       ip_address VARCHAR(45),
+       user_agent TEXT,
+       category VARCHAR(50) DEFAULT 'SYSTEM',
+       session_id VARCHAR(100),
+       created_at TIMESTAMP DEFAULT NOW()
    )
    """
    execute_query(query)
-   # Add request_id column if it doesn't exist
-   alter_query = """
-   ALTER TABLE logs ADD COLUMN IF NOT EXISTS request_id VARCHAR(15) DEFAULT 'none'
-   """
-   execute_query(alter_query)
+   
+   # Add performance indexes for the logs table
+   indexes = [
+       "CREATE INDEX IF NOT EXISTS idx_logs_log_level ON logs(log_level)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_category ON logs(category)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_session_id ON logs(session_id)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_admin_id ON logs(admin_id)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp DESC)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_action_text ON logs USING gin(to_tsvector('english', action || ' ' || COALESCE(details, '')))"
+   ]
+   
+   for index_query in indexes:
+       try:
+           execute_query(index_query)
+       except Exception as e:
+           print(f"Index creation warning for logs: {e}")
+   
+   # Update existing logs with default values
+   execute_query("UPDATE logs SET log_level = 'INFO', category = 'SYSTEM' WHERE log_level IS NULL OR category IS NULL")
 
 
 def ready_request_assignments_table():
@@ -375,27 +402,71 @@ def ready_available_dates_table():
 # INDEXES FOR PERFORMANCE
 # ==========================
 
+
 def create_performance_indexes():
    """Create indexes on frequently queried columns for better performance."""
    indexes = [
+       # Request-related indexes for faster lookups
+       "CREATE INDEX IF NOT EXISTS idx_requests_student_status ON requests(student_id, status)",
        "CREATE INDEX IF NOT EXISTS idx_requests_requested_at ON requests(requested_at DESC)",
        "CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status)",
        "CREATE INDEX IF NOT EXISTS idx_requests_request_id ON requests(request_id)",
+       "CREATE INDEX IF NOT EXISTS idx_requests_student_id ON requests(student_id)",
+       
+       # Request documents indexes for faster document lookups
        "CREATE INDEX IF NOT EXISTS idx_request_documents_request_id ON request_documents(request_id)",
        "CREATE INDEX IF NOT EXISTS idx_request_documents_doc_id ON request_documents(doc_id)",
+       "CREATE INDEX IF NOT EXISTS idx_request_documents_composite ON request_documents(request_id, doc_id)",
+       
+       # Custom documents index for faster custom doc lookups
+       "CREATE INDEX IF NOT EXISTS idx_others_docs_request_id ON others_docs(request_id)",
+       "CREATE INDEX IF NOT EXISTS idx_others_docs_student_id ON others_docs(student_id)",
+       
+       # Document requirements indexes
        "CREATE INDEX IF NOT EXISTS idx_document_requirements_doc_id ON document_requirements(doc_id)",
        "CREATE INDEX IF NOT EXISTS idx_document_requirements_req_id ON document_requirements(req_id)",
+       "CREATE INDEX IF NOT EXISTS idx_document_requirements_composite ON document_requirements(doc_id, req_id)",
+       
+       # Request requirements links indexes
        "CREATE INDEX IF NOT EXISTS idx_request_requirements_links_request_id ON request_requirements_links(request_id)",
        "CREATE INDEX IF NOT EXISTS idx_request_requirements_links_requirement_id ON request_requirements_links(requirement_id)",
-       "CREATE INDEX IF NOT EXISTS idx_logs_details ON logs(details)",
+       
+       # Logs indexes
        "CREATE INDEX IF NOT EXISTS idx_logs_admin_id ON logs(admin_id)",
        "CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp DESC)",
+       "CREATE INDEX IF NOT EXISTS idx_logs_request_id ON logs(request_id)",
+       
+       # Request assignments indexes
        "CREATE INDEX IF NOT EXISTS idx_request_assignments_request_id ON request_assignments(request_id)",
-       "CREATE INDEX IF NOT EXISTS idx_request_assignments_admin_id ON request_assignments(admin_id)"
+       "CREATE INDEX IF NOT EXISTS idx_request_assignments_admin_id ON request_assignments(admin_id)",
+       
+       # Students table indexes
+       "CREATE INDEX IF NOT EXISTS idx_students_student_id ON students(student_id)",
+       "CREATE INDEX IF NOT EXISTS idx_students_name ON students(firstname, lastname)",
+       "CREATE INDEX IF NOT EXISTS idx_students_college_code ON students(college_code)",
+       
+       # Documents table indexes
+       "CREATE INDEX IF NOT EXISTS idx_documents_doc_id ON documents(doc_id)",
+       "CREATE INDEX IF NOT EXISTS idx_documents_hidden ON documents(hidden)",
+       "CREATE INDEX IF NOT EXISTS idx_documents_cost ON documents(cost)",
+       
+       # Requirements table indexes
+       "CREATE INDEX IF NOT EXISTS idx_requirements_req_id ON requirements(req_id)",
+       "CREATE INDEX IF NOT EXISTS idx_requirements_name ON requirements(requirement_name)",
+       
+       # Changes table indexes for tracking
+       "CREATE INDEX IF NOT EXISTS idx_changes_request_id ON changes(request_id)",
+       "CREATE INDEX IF NOT EXISTS idx_changes_admin_id ON changes(admin_id)",
+       "CREATE INDEX IF NOT EXISTS idx_changes_requirement_id ON changes(requirement_id)",
+       "CREATE INDEX IF NOT EXISTS idx_changes_status ON changes(status)"
    ]
 
    for index_query in indexes:
-       execute_query(index_query)
+       try:
+           execute_query(index_query)
+       except Exception as e:
+           print(f"Warning: Could not create index - {e}")
+   
    print("Performance indexes created successfully.")
 
 

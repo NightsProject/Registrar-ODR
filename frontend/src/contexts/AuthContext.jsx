@@ -1,6 +1,8 @@
 
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { normalizeRole } from '../utils/roleUtils';
+import { getCSRFToken } from '../utils/csrf';
 
 const AuthContext = createContext();
 
@@ -31,6 +33,7 @@ export const AuthProvider = ({ children }) => {
   /**
    * Fetch current user information and role
    */
+
   const fetchCurrentUser = async () => {
     try {
       setIsLoading(true);
@@ -39,6 +42,7 @@ export const AuthProvider = ({ children }) => {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCSRFToken(),
         },
       });
 
@@ -90,6 +94,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
   /**
    * Logout user
    */
@@ -100,6 +105,7 @@ export const AuthProvider = ({ children }) => {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCSRFToken(),
         },
       });
     } catch (error) {
@@ -121,10 +127,13 @@ export const AuthProvider = ({ children }) => {
   const hasPermission = (permission) => {
     if (!role || !permission) return false;
     
+
+
+
     const rolePermissions = {
       admin: ['dashboard', 'requests', 'transactions', 'documents', 'logs', 'settings'],
       manager: ['dashboard', 'requests', 'documents', 'logs'],
-      auditor:['dashboard', 'transactions'],
+      auditor:['dashboard', 'transactions', 'view_request_details'],
       staff: ['dashboard', 'requests'],
       none: [],
     };

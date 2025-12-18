@@ -2,10 +2,12 @@
     background: rgba(0, 0, 0, 0.2);
 }
 
-.req-search-bar-wrapper {
+.req-search-bar {
+    display: flex;
     width: 100%;
     display: flex;
     justify-content: center;
+    gap: 8px;
 }
 
 .req-search-bar-container { 
@@ -22,5 +24,22 @@
     box-shadow: 2px 4px 12px #00000014;
 
     width: 100%;
+}
 
+.req-search-bar input {
+    padding-left: 8px;
+}
+
+.search-button{
+    display: flex;
+    background-color: var(--color-white);
+    box-shadow: var(--shadow-primary);
+    outline: none;
+    border: none;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    width: 50px;
+    min-width: 50px;
+    border-radius: 100%;
 }

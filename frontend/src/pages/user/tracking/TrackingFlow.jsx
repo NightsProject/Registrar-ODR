@@ -206,7 +206,7 @@ function TrackFlow() {
                 console.log("[MAYA][CHECKOUT] Checkout created:", checkout);
 
                 localStorage.setItem('pendingPayment', JSON.stringify({
-                    checkoutId: checkout.id,
+                    checkoutId: checkout.checkoutId || checkout.id,
                     trackingNumber: trackData.trackingNumber,
                     amountDue: amountToPay,
                     studentId: currentStudentId,

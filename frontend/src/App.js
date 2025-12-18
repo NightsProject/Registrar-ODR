@@ -66,9 +66,10 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* Request Details - Same permissions as Requests */}
+
+            {/* Request Details - Accessible via transactions or requests permission */}
             <Route path="Requests/:requestId" element={
-              <ProtectedRoute requiredPermissions={['requests']}>
+              <ProtectedRoute requiredPermissions={['requests', 'view_request_details']}>
                 <RequestViewPage_Flow />
               </ProtectedRoute>
             } />

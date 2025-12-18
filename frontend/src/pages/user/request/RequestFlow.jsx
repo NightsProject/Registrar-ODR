@@ -13,6 +13,7 @@ import SubmitRequest from "./SubmitRequest.jsx";
 
 import ConfirmModal from "../../../components/user/ConfirmModal";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import Toast from "../../../components/common/Toast";
 import { getCSRFToken } from "../../../utils/csrf";
 
 
@@ -46,6 +47,11 @@ function RequestFlow() {
 
   const [hasActiveRequests, setHasActiveRequests] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: "", variant: "info" });
+  const showToast = (message, variant = "info") => {
+    setToast({ show: true, message, variant });
+  };
+  
 
 
 
@@ -99,12 +105,12 @@ function RequestFlow() {
     }
 
     if (paymentStatus === "failure") {
-      alert("Payment failed. Please try again.");
+      showToast("Payment failed. Please try again.", "error");
       setStep("paymentGateway");
     }
 
     if (paymentStatus === "cancel") {
-      alert("Payment cancelled.");
+      showToast("Payment cancelled.", "info");
       setStep("paymentGateway");
     }
 
@@ -449,7 +455,7 @@ function RequestFlow() {
       
       goNextStep();
     } catch (error) {
-      alert("Error processing your request. Please try again.");
+      showToast("Error processing your request. Please try again.", "error");
     }
   }, [updateRequestData, goNextStep]);
 
@@ -660,19 +666,25 @@ function RequestFlow() {
           goNextStep();
         }
       } else {
-        alert(`Error: ${data.notification}`);
+        showToast(`Error: ${data.notification}`, "error");
       }
     } catch (error) {
-      alert("An error occurred while completing the request.");
+      showToast("An error occurred while completing the request.", "error");
     }
   };
 
   return (
     <>
-
       {(step === "checkActiveRequests" || isRedirecting) && (
         <LoadingSpinner message={isRedirecting ? "Redirecting to tracking..." : "Checking for active requests..."} />
       )}
+
+            <Toast
+              show={toast.show}
+              message={toast.message}
+              variant={toast.variant}
+              onClose={() => setToast({ ...toast, show: false })}
+            />
       
       {step === "pendingRequests" && (
         <PendingRequests
@@ -754,6 +766,7 @@ function RequestFlow() {
           onFileRemove={handleFileRemove}
           onNext={handleRequirementsUploadAndProceed}
           onBack={goBackStep}
+          showToast={showToast}
         />
       )}
 
@@ -764,6 +777,7 @@ function RequestFlow() {
           onMethodChange={(method) => updateRequestData({ preferredContact: method })}
           onNext={(method) => handlePreferredContactUpdate(method, requestData.studentInfo)}
           onBack={goBackStep}
+          showToast={showToast}
         />
       )}
 
@@ -779,6 +793,7 @@ function RequestFlow() {
             handleFinalSubmission();
           }}
           onBack={goBackStep}
+          showToast={showToast}
         />
       )}
 
@@ -794,6 +809,7 @@ function RequestFlow() {
           onSkipPayment={handleSkipPayment}
           paymentCompleted={paymentCompleted}
           paymentInfo={paymentInfo}
+          showToast={showToast}
         />
       )}
 
@@ -801,6 +817,7 @@ function RequestFlow() {
         <SubmitRequest
           trackingId={trackingId}
           onBack={goBackStep}
+          showToast={showToast}
         />
       )}
 
