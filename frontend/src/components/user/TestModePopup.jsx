@@ -1,5 +1,6 @@
+
 import React, { useState } from "react";
-import { getCSRFToken } from "../../utils/csrf";
+import { authenticatedFetch } from "../../utils/csrf";
 import "./TestModePopup.css";
 
 const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
@@ -60,20 +61,18 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
     onClose();
   };
 
+
   // Student registration
   const handleStudentSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const csrfToken = getCSRFToken();
-      const response = await fetch('/api/developers/test-registration/student', {
+      const response = await authenticatedFetch('/api/developers/test-registration/student', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
         },
-        credentials: 'include',
         body: JSON.stringify(studentForm),
       });
       
@@ -93,20 +92,18 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
     }
   };
 
+
   // Admin registration
   const handleAdminSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const csrfToken = getCSRFToken();
-      const response = await fetch('/api/developers/test-registration/admin', {
+      const response = await authenticatedFetch('/api/developers/test-registration/admin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
         },
-        credentials: 'include',
         body: JSON.stringify(adminForm),
       });
       
@@ -126,20 +123,18 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
     }
   };
 
+
   // Feedback submission
   const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const csrfToken = getCSRFToken();
-      const response = await fetch('/api/developers/feedback', {
+      const response = await authenticatedFetch('/api/developers/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
         },
-        credentials: 'include',
         body: JSON.stringify(feedbackForm),
       });
       

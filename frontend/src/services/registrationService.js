@@ -1,9 +1,10 @@
-import { getCSRFToken } from '../utils/csrf';
+
+import { authenticatedFetch } from '../utils/csrf';
 
 // Test Mode Settings API
 export const testModeService = {
   getTestMode: async () => {
-    const response = await getCSRFToken('/api/developers/test-mode', {
+    const response = await authenticatedFetch('/api/developers/test-mode', {
       method: 'GET',
     });
     
@@ -15,7 +16,7 @@ export const testModeService = {
   },
 
   updateTestMode: async (testMode) => {
-    const response = await getCSRFToken('/api/developers/test-mode', {
+    const response = await authenticatedFetch('/api/developers/test-mode', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -31,10 +32,11 @@ export const testModeService = {
   },
 };
 
+
 // Student Registration API
 export const studentRegistrationService = {
   registerStudent: async (studentData) => {
-    const response = await getCSRFToken('/api/developers/test-registration/student', {
+    const response = await authenticatedFetch('/api/developers/test-registration/student', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -51,7 +53,7 @@ export const studentRegistrationService = {
   },
 
   getStudent: async (studentId) => {
-    const response = await getCSRFToken(`/api/developers/test-registration/student/${studentId}`, {
+    const response = await authenticatedFetch(`/api/developers/test-registration/student/${studentId}`, {
       method: 'GET',
     });
     
@@ -63,10 +65,11 @@ export const studentRegistrationService = {
   },
 };
 
+
 // Admin Registration API
 export const adminRegistrationService = {
   registerAdmin: async (adminData) => {
-    const response = await getCSRFToken('/api/developers/test-registration/admin', {
+    const response = await authenticatedFetch('/api/developers/test-registration/admin', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +86,7 @@ export const adminRegistrationService = {
   },
 
   getAdmin: async (email) => {
-    const response = await getCSRFToken(`/api/developers/test-registration/admin/${email}`, {
+    const response = await authenticatedFetch(`/api/developers/test-registration/admin/${email}`, {
       method: 'GET',
     });
     
@@ -95,10 +98,11 @@ export const adminRegistrationService = {
   },
 };
 
+
 // Feedback API
 export const feedbackService = {
   submitFeedback: async (feedbackData) => {
-    const response = await fetch('/api/developers/feedback', {
+    const response = await authenticatedFetch('/api/developers/feedback', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -115,7 +119,7 @@ export const feedbackService = {
   },
 
   getFeedback: async () => {
-    const response = await getCSRFToken('/api/developers/feedback', {
+    const response = await authenticatedFetch('/api/developers/feedback', {
       method: 'GET',
     });
     
@@ -127,7 +131,7 @@ export const feedbackService = {
   },
 
   updateFeedbackStatus: async (feedbackId, status) => {
-    const response = await getCSRFToken(`/api/developers/feedback/${feedbackId}`, {
+    const response = await authenticatedFetch(`/api/developers/feedback/${feedbackId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -144,7 +148,7 @@ export const feedbackService = {
   },
 
   deleteFeedback: async (feedbackId) => {
-    const response = await getCSRFToken(`/api/developers/feedback/${feedbackId}`, {
+    const response = await authenticatedFetch(`/api/developers/feedback/${feedbackId}`, {
       method: 'DELETE',
     });
     

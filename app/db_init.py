@@ -708,7 +708,7 @@ def initialize_db():
    ready_admin_settings_table()
    ready_open_request_restriction_table()
    ready_fee_table()
-   insert_sample_data()
+   #insert_sample_data()
    ready_others_docs_table()
    ready_changes_table()
    ready_available_dates_table()

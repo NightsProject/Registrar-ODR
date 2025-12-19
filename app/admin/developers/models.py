@@ -25,9 +25,9 @@ class TestModeSettings:
         cur = conn.cursor()
         try:
             cur.execute("""
-                INSERT INTO open_request_restriction (id, test_mode)
-                VALUES (1, %s)
-                ON CONFLICT (id) DO UPDATE SET test_mode = EXCLUDED.test_mode
+                UPDATE open_request_restriction
+                SET test_mode = %s
+                WHERE id = 1;
             """, (test_mode,))
             conn.commit()
             return True
