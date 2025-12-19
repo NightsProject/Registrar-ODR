@@ -4,10 +4,10 @@ import { authenticatedFetch } from "../../utils/csrf";
 import "./TestModePopup.css";
 
 const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
+
   const [currentStep, setCurrentStep] = useState('role-selection');
   const [userRole, setUserRole] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   
   // Form states
@@ -33,11 +33,11 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
     steps_to_reproduce: ''
   });
 
+
   // Reset forms when closing
   const handleClose = () => {
     setCurrentStep('role-selection');
     setUserRole('');
-    setShowFeedbackForm(false);
     setFeedbackSubmitted(false);
     setStudentForm({
       student_id: '',
@@ -76,9 +76,9 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
         body: JSON.stringify(studentForm),
       });
       
+
       if (response.ok) {
         setCurrentStep('success');
-        setShowFeedbackForm(true);
         onRegistrationSuccess?.('student', studentForm);
       } else {
         const error = await response.json();
@@ -107,9 +107,9 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
         body: JSON.stringify(adminForm),
       });
       
+
       if (response.ok) {
         setCurrentStep('success');
-        setShowFeedbackForm(true);
         onRegistrationSuccess?.('admin', adminForm);
       } else {
         const error = await response.json();
@@ -182,6 +182,7 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                 Welcome! Please select your role for test mode registration.
               </p>
               
+
               <div className="role-options">
                 <div 
                   className="role-card"
@@ -205,6 +206,18 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                   <div className="role-icon">👨‍💼</div>
                   <h3>Administrator</h3>
                   <p>Register as an admin to test the management system</p>
+                </div>
+                
+                <div 
+                  className="role-card"
+                  onClick={() => {
+                    setUserRole('feedback');
+                    setCurrentStep('feedback-form');
+                  }}
+                >
+                  <div className="role-icon">💬</div>
+                  <h3>Feedback</h3>
+                  <p>Submit feedback about the test experience</p>
                 </div>
               </div>
             </div>
@@ -321,6 +334,7 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                 
                 <div className="form-group">
                   <label>Role *</label>
+
                   <select
                     value={adminForm.role}
                     onChange={(e) => handleInputChange('admin', 'role', e.target.value)}
@@ -330,7 +344,6 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                     <option value="auditor">Auditor</option>
                     <option value="manager">Manager</option>
                     <option value="admin">Admin</option>
-                    <option value="developer">Developer</option>
                   </select>
                 </div>
                 
@@ -354,15 +367,22 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
             </div>
           )}
 
+
           {currentStep === 'success' && (
             <div className="success-section">
               <div className="success-icon">✅</div>
               <h3>Registration Successful!</h3>
               <p>Your test account has been created. You can now proceed to use the system.</p>
+              <button 
+                className="btn-primary" 
+                onClick={handleClose}
+              >
+                Close
+              </button>
             </div>
           )}
 
-          {showFeedbackForm && !feedbackSubmitted && (
+          {currentStep === 'feedback-form' && !feedbackSubmitted && (
             <div className="feedback-section">
               <h3>We Value Your Feedback</h3>
               <p>Help us improve by sharing your experience.</p>
@@ -427,7 +447,15 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                   </div>
                 )}
                 
+
                 <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="btn-secondary"
+                    onClick={() => setCurrentStep('role-selection')}
+                  >
+                    Back
+                  </button>
                   <button type="submit" className="btn-primary" disabled={loading}>
                     {loading ? 'Submitting...' : 'Submit Feedback'}
                   </button>

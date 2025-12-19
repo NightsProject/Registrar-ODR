@@ -136,13 +136,18 @@ def register_student():
     """Register or update student (for test mode)."""
     data = request.get_json(silent=True) or {}
     
+
     # Required fields
     required_fields = ['student_id', 'firstname', 'lastname', 'contact_number', 'email', 'college_code']
     for field in required_fields:
         if not data.get(field):
             return jsonify({"error": f"{field} is required"}), 400
     
-
+    # Check if student ID already exists
+    student_id = data.get('student_id')
+    if TestRegistration.check_student_exists(student_id):
+        return jsonify({"error": "Student ID already exists. Cannot register duplicate student ID."}), 400
+    
     # Validate phone number format (639xxxxxxxxx)
     contact_number = data.get('contact_number')
     phone_pattern = r'^639\d{9}$'
@@ -201,8 +206,9 @@ def register_admin():
     if not data.get('email') or not data.get('role'):
         return jsonify({"error": "Email and role are required"}), 400
     
+
     # Validate role
-    valid_roles = ['admin', 'manager', 'auditor', 'staff', 'developer']
+    valid_roles = ['admin', 'manager', 'auditor', 'staff']
     role = data.get('role')
     if role not in valid_roles:
         return jsonify({"error": f"Role must be one of: {', '.join(valid_roles)}"}), 400

@@ -215,6 +215,7 @@ class TestRegistration:
         finally:
             cur.close()
 
+
     @staticmethod
     def get_admin(email):
         """Get admin by email."""
@@ -232,6 +233,21 @@ class TestRegistration:
         except Exception as e:
             print(f"Error fetching admin: {e}")
             return None
+        finally:
+            cur.close()
+
+    @staticmethod
+    def check_student_exists(student_id):
+        """Check if student ID already exists."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT COUNT(*) FROM students WHERE student_id = %s", (student_id,))
+            count = cur.fetchone()[0]
+            return count > 0
+        except Exception as e:
+            print(f"Error checking student existence: {e}")
+            return False
         finally:
             cur.close()
 
