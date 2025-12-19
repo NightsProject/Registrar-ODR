@@ -1,4 +1,7 @@
 
+
+
+
 import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
 import DashboardIcon from '../icons/DashboardIcon';
@@ -7,8 +10,8 @@ import LogsIcon from '../icons/LogsIcon';
 import PaidIcon from '../icons/PaidIcon';
 import RequestsIcon from '../icons/RequestsIcon';
 import SettingsIcon from '../icons/SettingsIcon';
+import CodeIcon from '../icons/CodeIcon';
 import { useAuth } from '../../contexts/AuthContext';
-import { getFilteredNavigationItems } from '../../utils/roleUtils';
 
 
 const Sidebar = () => {
@@ -24,24 +27,13 @@ const Sidebar = () => {
             'DocumentsIcon': DocumentsIcon,
             'LogsIcon': LogsIcon,
             'SettingsIcon': SettingsIcon,
+            'CodeIcon': CodeIcon,
         };
         return iconMap[iconName] || DashboardIcon;
     };
 
-    // Get all available navigation items with their icons
-    const allNavItems = [
-        { name: 'Dashboard', path: '/admin/dashboard', icon: 'DashboardIcon' },
-        { name: 'Requests', path: '/admin/requests', icon: 'RequestsIcon' },
-        { name: 'Transactions', path: '/admin/transactions', icon: 'PaidIcon' },
-        { name: 'Documents', path: '/admin/document', icon: 'DocumentsIcon' },
-        { name: 'Logs', path: '/admin/logs', icon: 'LogsIcon' },
-        { name: 'Settings', path: '/admin/settings', icon: 'SettingsIcon' }
-    ];
-
-    // Filter navigation items based on user role
-    const navItems = allNavItems.filter(item => 
-        filteredNavItems.some(filtered => filtered.path === item.path)
-    );
+    // Use the filtered navigation items from AuthContext which already handles role-based filtering
+    const navItems = filteredNavItems;
 
     return (
         <aside className="admin-sidebar">

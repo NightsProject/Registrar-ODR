@@ -73,7 +73,7 @@ manage request
 
     satisfaction survey
 
-    fee management
+    fee management - LBC orders, datacenter fee
 
     edit reason in the manage date - you can update the reason via manually inputing the date in it
 
@@ -83,7 +83,21 @@ manage request
 
     the availability would be based on the server time so when deployed in render its not philippines time
 
+    unify the frontend
 
+    add dark mode feature
 
+    auto redirect to dashboard if refreshed and jwt exists
 
+    can set final price for the document when the status changes to in-progress to unpaid
+
+    whatsapp message - on behalf message
+
+    documentations
+    
+    fix error handlers
+
+    the maya integrations should have own folders like whatsapp
+
+    integrate refresh components -socket
 

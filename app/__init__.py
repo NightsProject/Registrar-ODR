@@ -21,6 +21,7 @@ def create_app(test_config=None):
     
    
     #initialize the database (create tables if not exist)
+    #initialize_db()
     #initialize_and_populate()
     load_dotenv()
 
@@ -111,8 +112,11 @@ def create_app(test_config=None):
     app.register_blueprint(manage_request_blueprint)
     from .admin.transactions import transactions_bp as transactions_blueprint
     app.register_blueprint(transactions_blueprint)
+
     from .admin.settings import settings_bp as settings_blueprint
     app.register_blueprint(settings_blueprint)
+    from .admin.developers import developers_bp as developers_blueprint
+    app.register_blueprint(developers_blueprint)
 
     
     #USER BLUEPRINTS

@@ -1,9 +1,11 @@
 
 
+
+
 from . import settings_bp
 from flask import jsonify, request, current_app
 from app.utils.decorator import jwt_required_with_role
-from .models import Admin, OpenRequestRestriction, Fee, AvailableDates
+from .models import Admin, OpenRequestRestriction, Fee, AvailableDates, DomainWhitelist
 from flask_jwt_extended import jwt_required
 import json
 
@@ -267,6 +269,7 @@ def get_upcoming_restrictions():
         return jsonify({"error": "Failed to fetch upcoming restrictions"}), 500
 
 
+
 @settings_bp.route("/api/public/date-availability/<date>", methods=["GET"])
 def check_date_availability(date):
     """Public endpoint to check if a specific date is available for requests."""
@@ -280,3 +283,144 @@ def check_date_availability(date):
     except Exception as e:
         current_app.logger.error(f"Error checking availability for date {date}: {e}")
         return jsonify({"error": "Failed to check date availability"}), 500
+
+
+# ==========================
+# DOMAIN WHITELIST MANAGEMENT ENDPOINTS
+# ==========================
+
+@settings_bp.route("/api/admin/domain-whitelist", methods=["GET"])
+@jwt_required()
+def get_domain_whitelist():
+    """Get all domains in whitelist."""
+    try:
+        domains = DomainWhitelist.get_all()
+        return jsonify({"domains": domains}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error fetching domain whitelist: {e}")
+        return jsonify({"error": "Failed to fetch domain whitelist"}), 500
+
+
+@settings_bp.route("/api/admin/domain-whitelist/<int:domain_id>", methods=["GET"])
+@jwt_required()
+def get_domain_by_id(domain_id):
+    """Get a specific domain by ID."""
+    try:
+        domain = DomainWhitelist.get_by_id(domain_id)
+        if domain:
+            return jsonify(domain), 200
+        else:
+            return jsonify({"error": "Domain not found"}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error fetching domain {domain_id}: {e}")
+        return jsonify({"error": "Failed to fetch domain"}), 500
+
+
+@settings_bp.route("/api/admin/domain-whitelist", methods=["POST"])
+@jwt_required()
+def add_domain():
+    """Add a new domain to whitelist."""
+    data = request.get_json(silent=True) or {}
+    domain = data.get("domain")
+    description = data.get("description", "")
+    is_active = data.get("is_active", True)
+
+    if not domain:
+        return jsonify({"error": "Domain is required"}), 400
+
+    # Basic domain validation
+    if not domain or '.' not in domain:
+        return jsonify({"error": "Invalid domain format"}), 400
+
+    try:
+        if DomainWhitelist.add(domain, description, is_active):
+            current_app.logger.info(f"Domain {domain} added to whitelist")
+            return jsonify({"message": "Domain added successfully"}), 201
+        else:
+            return jsonify({"error": "Failed to add domain (may already exist)"}), 500
+    except Exception as e:
+        current_app.logger.error(f"Error adding domain {domain}: {e}")
+        return jsonify({"error": "Failed to add domain"}), 500
+
+
+@settings_bp.route("/api/admin/domain-whitelist/<int:domain_id>", methods=["PUT"])
+@jwt_required()
+def update_domain(domain_id):
+    """Update an existing domain."""
+    data = request.get_json(silent=True) or {}
+    domain = data.get("domain")
+    description = data.get("description")
+    is_active = data.get("is_active")
+
+    if not any([domain, description is not None, is_active is not None]):
+        return jsonify({"error": "At least one field (domain, description, or is_active) is required"}), 400
+
+    # Validate domain if provided
+    if domain and '.' not in domain:
+        return jsonify({"error": "Invalid domain format"}), 400
+
+    try:
+        if DomainWhitelist.update(domain_id, domain, description, is_active):
+            current_app.logger.info(f"Domain {domain_id} updated")
+            return jsonify({"message": "Domain updated successfully"}), 200
+        else:
+            return jsonify({"error": "Domain not found"}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error updating domain {domain_id}: {e}")
+        return jsonify({"error": "Failed to update domain"}), 500
+
+
+@settings_bp.route("/api/admin/domain-whitelist/<int:domain_id>", methods=["DELETE"])
+@jwt_required()
+def delete_domain(domain_id):
+    """Delete a domain from whitelist."""
+    try:
+        if DomainWhitelist.delete(domain_id):
+            current_app.logger.info(f"Domain {domain_id} deleted from whitelist")
+            return jsonify({"message": "Domain deleted successfully"}), 200
+        else:
+            return jsonify({"error": "Domain not found"}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error deleting domain {domain_id}: {e}")
+        return jsonify({"error": "Failed to delete domain"}), 500
+
+
+@settings_bp.route("/api/admin/domain-whitelist/<int:domain_id>/toggle", methods=["PATCH"])
+@jwt_required()
+def toggle_domain_status(domain_id):
+    """Toggle the active status of a domain."""
+    try:
+        if DomainWhitelist.toggle_active_status(domain_id):
+            current_app.logger.info(f"Domain {domain_id} status toggled")
+            return jsonify({"message": "Domain status updated successfully"}), 200
+        else:
+            return jsonify({"error": "Domain not found"}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error toggling domain {domain_id}: {e}")
+        return jsonify({"error": "Failed to toggle domain status"}), 500
+
+
+@settings_bp.route("/api/admin/domain-whitelist/active", methods=["GET"])
+@jwt_required()
+def get_active_domains():
+    """Get all active domains for dropdown/selection purposes."""
+    try:
+        domains = DomainWhitelist.get_active_domains()
+        return jsonify({"active_domains": domains}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error fetching active domains: {e}")
+        return jsonify({"error": "Failed to fetch active domains"}), 500
+
+
+@settings_bp.route("/api/public/domain-check/<domain>", methods=["GET"])
+def check_domain_allowed(domain):
+    """Public endpoint to check if a domain is allowed."""
+    try:
+        is_allowed = DomainWhitelist.is_domain_allowed(domain)
+        return jsonify({
+            "domain": domain,
+            "is_allowed": is_allowed
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"Error checking domain {domain}: {e}")
+        return jsonify({"error": "Failed to check domain"}), 500

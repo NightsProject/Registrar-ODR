@@ -1,14 +1,20 @@
 
+
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ButtonLink from "../../components/common/ButtonLink";
 import ContentBox from "../../components/user/ContentBox";
+import TestModePopup from "../../components/user/TestModePopup";
+import { testModeService } from "../../services/registrationService";
 import "../../components/common/index.css";
 import "./Landing.css";
+
 
 function Landing() {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  const [showTestModePopup, setShowTestModePopup] = useState(false);
 
   const [settings, setSettings] = useState(null);
   const [announcement, setAnnouncement] = useState('');
@@ -16,7 +22,9 @@ function Landing() {
 
   useEffect(() => {
     fetchAnnouncement();
+    checkTestMode();
   }, []);
+
 
   const fetchAnnouncement = async () => {
     try {
@@ -29,6 +37,18 @@ function Landing() {
       }
     } catch (error) {
       console.error('Error fetching announcement:', error);
+    }
+  };
+
+
+  const checkTestMode = async () => {
+    try {
+      const data = await testModeService.getTestMode();
+      if (data.test_mode) {
+        setShowTestModePopup(true);
+      }
+    } catch (error) {
+      console.error('Error checking test mode:', error);
     }
   };
 
@@ -155,6 +175,7 @@ function Landing() {
       </div>
 
 
+
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -179,6 +200,7 @@ function Landing() {
             {/* Standard time/day restrictions */}
             {settings && (
               <div className="settings-info">
+
                 <p><strong>Available Hours:</strong> {formatTime(settings.start_time)} - {formatTime(settings.end_time)}</p>
                 <p><strong>Available Days:</strong> {settings.available_days.join(', ')}</p>
               </div>
@@ -202,6 +224,13 @@ function Landing() {
             <button onClick={() => setShowModal(false)} className="modal-close-btn">Close</button>
           </div>
         </div>
+      )}
+
+      {showTestModePopup && (
+        <TestModePopup
+          isOpen={showTestModePopup}
+          onClose={() => setShowTestModePopup(false)}
+        />
       )}
     </div>
   );

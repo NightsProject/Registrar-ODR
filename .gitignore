@@ -10,6 +10,7 @@ test/
 notes.txt
 flask_session/
 uploads/
+app/static/react/
 
 # User-specific files
 *.rsuser

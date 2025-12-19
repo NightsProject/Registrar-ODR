@@ -1,0 +1,717 @@
+# DEVELOPER RULES AND STANDARDS
+# Registrar ODR Application Development Guidelines
+
+## 1. PROJECT OVERVIEW
+
+### Technology Stack
+- **Backend**: Python Flask with PostgreSQL
+- **Frontend**: React 19.2.0 with Tailwind CSS
+- **Authentication**: JWT with cookie-based sessions
+- **Database**: PostgreSQL with connection pooling
+- **Build System**: React Scripts, Flask development server
+- **External Services**: Maya Payments, WhatsApp integration
+
+### Architecture Pattern
+- **Backend**: Blueprint-based modular architecture
+- **Frontend**: Component-based React architecture
+- **Separation**: Clear admin/user module separation
+
+## 2. PROJECT STRUCTURE STANDARDS
+
+### Backend Structure (/app/)
+```
+app/
+├── __init__.py                 # Flask app factory
+├── admin/                      # Admin module blueprints
+│   ├── authentication/         # Admin auth
+│   ├── dashboard/             # Admin dashboard
+│   ├── document_manage/       # Document management
+│   ├── logging/               # System logging
+│   ├── manage_request/        # Request management
+│   ├── settings/              # System settings
+│   └── transactions/          # Transaction handling
+├── user/                       # User module blueprints
+│   ├── authentication/        # User auth
+│   ├── document_list/         # Document listing
+│   ├── landing/               # Landing page
+│   ├── request/               # Request creation
+│   ├── tracking/              # Request tracking
+│   └── payment/               # Payment processing
+├── services/                   # External service integrations
+├── utils/                      # Shared utilities
+├── whatsapp/                   # WhatsApp integration
+├── db_init.py                 # Database initialization
+└── static/                    # Static files
+```
+
+### Frontend Structure (/frontend/src/)
+```
+frontend/src/
+├── components/                 # Reusable components
+│   ├── admin/                 # Admin-specific components
+│   ├── common/                # Shared components
+│   ├── user/                  # User-specific components
+│   └── icons/                 # Icon components
+├── pages/                     # Page components
+│   ├── admin/                 # Admin pages
+│   ├── user/                  # User pages
+│   └── layouts/               # Layout components
+├── contexts/                  # React contexts
+├── hooks/                     # Custom hooks
+├── services/                  # API services
+├── utils/                     # Utility functions
+├── App.js                     # Main App component
+└── index.js                   # Entry point
+```
+
+## 3. CODING STANDARDS
+
+### Python Standards (Flask Backend)
+
+#### Naming Conventions
+- **Files**: snake_case.py
+- **Classes**: PascalCase
+- **Functions/Variables**: snake_case
+- **Constants**: UPPER_SNAKE_CASE
+- **Blueprint names**: descriptive_snake_case
+- **Route names**: descriptive_endpoint_names
+
+#### Code Organization
+```python
+# Required imports order
+# 1. Standard library
+import os
+import json
+from datetime import datetime
+
+# 2. Third-party packages
+import psycopg2
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+# 3. Local imports
+from app.services.logging_service import Logger
+from app.utils.decorator import admin_required
+
+# Blueprint definition
+example_bp = Blueprint('example', __name__, url_prefix='/api/example')
+
+# Route handlers
+@example_bp.route('/endpoint', methods=['GET'])
+@jwt_required()
+@admin_required
+def handle_endpoint():
+    """Function description."""
+    try:
+        # Implementation
+        pass
+    except Exception as e:
+        # Error handling
+        pass
+```
+
+#### Flask-Specific Standards
+- **Blueprints**: One blueprint per feature module
+- **Error Handling**: Use custom error handlers in utils/error_handlers.py
+- **Database**: Always use connection pooling (g.db_conn)
+- **Authentication**: Use @jwt_required() decorator for protected routes
+- **Input Validation**: Validate all input data
+- **Response Format**: Return JSON responses with consistent structure
+
+#### Database Standards
+```python
+# Database connection pattern
+def get_db_connection():
+    return g.db_conn
+
+# Query execution pattern
+def execute_query(query, params=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(query, params)
+        if query.strip().upper().startswith('SELECT'):
+            return cursor.fetchall()
+        else:
+            conn.commit()
+            return cursor.rowcount
+    finally:
+        cursor.close()
+
+# Database operations should be in try-except blocks
+```
+
+### JavaScript/React Standards (Frontend)
+
+#### Naming Conventions
+- **Files**: PascalCase.jsx for components, camelCase.js for utilities
+- **Components**: PascalCase
+- **Functions/Variables**: camelCase
+- **Constants**: UPPER_SNAKE_CASE
+- **CSS Classes**: kebab-case
+- **API Endpoints**: descriptive endpoint names
+
+#### Code Organization
+```jsx
+// Required imports order
+// 1. React and React Router
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// 2. Third-party packages
+import axios from 'axios';
+import { motion } from 'framer-motion';
+
+// 3. Local imports
+import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import Button from '../components/common/Button';
+
+// Component structure
+const ComponentName = ({ prop1, prop2 }) => {
+    // Hooks at the top
+    const [state, setState] = useState(initialValue);
+    const { user, logout } = useAuth();
+    
+    // Event handlers
+    const handleClick = (event) => {
+        // Implementation
+    };
+    
+    // Effects
+    useEffect(() => {
+        // Side effects
+    }, [dependency]);
+    
+    // Render
+    return (
+        <div className="component-styles">
+            {/* JSX */}
+        </div>
+    );
+};
+
+export default ComponentName;
+```
+
+#### React-Specific Standards
+- **Components**: Functional components with hooks
+- **State Management**: Use React Context for global state, useState for local
+- **Props**: Define propTypes for all components
+- **Effects**: Clean up effects with return functions
+- **API Calls**: Use axios with proper error handling
+- **Routing**: Use React Router with protected routes
+- **Styling**: Use Tailwind CSS classes, avoid inline styles
+
+#### CSS Standards
+```css
+/* Use Tailwind utility classes primarily */
+/* Custom CSS only for complex animations or layouts */
+
+/* Component-specific styles */
+.component-name {
+    /* Custom styles only when Tailwind can't handle */
+}
+
+/* Responsive design */
+@media (min-width: 768px) {
+    .responsive-class {
+        /* Tablet and desktop styles */
+    }
+}
+```
+
+## 4. API STANDARDS
+
+### Backend API Design
+
+#### Response Format
+```json
+{
+    "success": true,
+    "data": {
+        // Response data
+    },
+    "message": "Operation successful",
+    "timestamp": "2024-01-01T00:00:00Z"
+}
+```
+
+#### Error Response Format
+```json
+{
+    "success": false,
+    "error": {
+        "code": "ERROR_CODE",
+        "message": "User-friendly error message",
+        "details": "Technical details for debugging"
+    },
+    "timestamp": "2024-01-01T00:00:00Z"
+}
+```
+
+#### HTTP Status Codes
+- **200**: Success
+- **201**: Created successfully
+- **400**: Bad request (validation errors)
+- **401**: Unauthorized (authentication required)
+- **403**: Forbidden (insufficient permissions)
+- **404**: Not found
+- **409**: Conflict (duplicate data)
+- **422**: Unprocessable entity (business logic error)
+- **500**: Internal server error
+
+### Frontend API Integration
+
+#### API Service Pattern
+```javascript
+// services/api.js
+import axios from 'axios';
+
+const api = axios.create({
+    baseURL: process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000',
+    withCredentials: true,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Request interceptor
+api.interceptors.request.use(
+    (config) => {
+        // Add auth token if available
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+    (response) => response.data,
+    (error) => {
+        // Handle common errors
+        if (error.response?.status === 401) {
+            // Redirect to login
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+export default api;
+```
+
+## 5. DATABASE STANDARDS
+
+### PostgreSQL Standards
+
+#### Table Naming
+- **Tables**: snake_case (lowercase with underscores)
+- **Columns**: snake_case
+- **Primary Keys**: id (SERIAL PRIMARY KEY)
+- **Foreign Keys**: {table_name}_id
+- **Timestamps**: created_at, updated_at (TIMESTAMP DEFAULT NOW())
+
+#### Query Standards
+```sql
+-- Always specify columns, avoid SELECT *
+SELECT id, name, email, created_at 
+FROM users 
+WHERE status = 'active' 
+ORDER BY created_at DESC 
+LIMIT 50;
+
+-- Use proper indexing
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_status_created ON users(status, created_at);
+
+-- Use transactions for multiple operations
+BEGIN;
+    INSERT INTO requests (user_id, document_type) VALUES (1, 'transcript');
+    UPDATE user_stats SET request_count = request_count + 1 WHERE user_id = 1;
+COMMIT;
+```
+
+#### Connection Management
+- Use connection pooling (max 10 connections)
+- Always close cursors after use
+- Use context managers when possible
+- Handle connection failures gracefully
+
+## 6. SECURITY STANDARDS
+
+### Authentication & Authorization
+- **JWT Tokens**: Use secure, httpOnly cookies
+- **Token Expiry**: 1 hour for access tokens
+- **Password Security**: Never store plaintext passwords
+- **Session Management**: Use Flask-Session with secure settings
+- **CSRF Protection**: Enabled for all state-changing operations
+- **Role-Based Access**: Implement role checks for admin routes
+
+### Input Validation
+```python
+# Backend validation example
+from marshmallow import Schema, fields, validate
+
+class UserRegistrationSchema(Schema):
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, validate=validate.Length(min=8))
+    first_name = fields.Str(required=True, validate=validate.Length(max=50))
+    last_name = fields.Str(required=True, validate=validate.Length(max=50))
+```
+
+```javascript
+// Frontend validation example
+const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+};
+
+const validatePassword = (password) => {
+    return password.length >= 8;
+};
+```
+
+### Data Sanitization
+- **SQL Injection**: Use parameterized queries only
+- **XSS Prevention**: Escape all user input in templates
+- **File Uploads**: Validate file types and sizes
+- **API Responses**: Sanitize sensitive data
+
+## 7. TESTING STANDARDS
+
+### Backend Testing
+```python
+# tests/test_auth.py
+import pytest
+from app import create_app, db_pool
+
+@pytest.fixture
+def app():
+    app = create_app({'TESTING': True})
+    yield app
+    # Cleanup
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+def test_admin_login(client):
+    response = client.post('/admin/auth/login', json={
+        'email': 'admin@test.com',
+        'password': 'testpass'
+    })
+    assert response.status_code == 200
+    assert 'access_token' in response.json
+```
+
+### Frontend Testing
+```javascript
+// src/components/__tests__/Button.test.js
+import { render, screen, fireEvent } from '@testing-library/react';
+import Button from '../Button';
+
+test('renders button with text', () => {
+    render(<Button>Click me</Button>);
+    expect(screen.getByText('Click me')).toBeInTheDocument();
+});
+
+test('calls onClick when clicked', () => {
+    const handleClick = jest.fn();
+    render(<Button onClick={handleClick}>Click me</Button>);
+    fireEvent.click(screen.getByText('Click me'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+});
+```
+
+### Testing Requirements
+- **Unit Tests**: Minimum 80% coverage for critical functions
+- **Integration Tests**: Test API endpoints and database operations
+- **Frontend Tests**: Test components and user interactions
+- **Security Tests**: Test authentication and authorization
+
+## 8. DOCUMENTATION STANDARDS
+
+### Code Documentation
+```python
+def process_document(document_id, user_id):
+    """
+    Process a document request for a user.
+    
+    Args:
+        document_id (int): The ID of the document to process
+        user_id (int): The ID of the user making the request
+        
+    Returns:
+        dict: Processing result with status and message
+        
+    Raises:
+        DocumentNotFoundError: When document doesn't exist
+        PermissionError: When user lacks permission
+        
+    Example:
+        >>> result = process_document(123, 456)
+        >>> print(result['status'])
+        'processed'
+    """
+```
+
+### API Documentation
+```javascript
+/**
+ * Get user documents
+ * @route GET /api/user/documents
+ * @access Private
+ * @description Retrieves all documents for the authenticated user
+ * @query {string} status - Filter by document status (optional)
+ * @query {string} type - Filter by document type (optional)
+ * @response {Object} 200 - Success response with document list
+ * @response {Object} 401 - Unauthorized
+ */
+const getUserDocuments = async (filters = {}) => {
+    return await api.get('/api/user/documents', { params: filters });
+};
+```
+
+### Documentation Files
+- **README.md**: Project overview and setup instructions
+- **API_DOCUMENTATION.md**: Complete API reference
+- **DEPLOYMENT.md**: Deployment instructions
+- **CONTRIBUTING.md**: Contribution guidelines
+
+## 9. GIT WORKFLOW
+
+### Branch Strategy
+```
+main (production)
+├── develop (integration)
+├── feature/feature-name
+├── bugfix/issue-description
+├── hotfix/critical-fix
+└── release/version-number
+```
+
+### Commit Message Format
+```
+type(scope): subject
+
+body
+
+footer
+```
+
+**Types**: feat, fix, docs, style, refactor, test, chore
+
+**Examples**:
+```
+feat(auth): add password reset functionality
+
+- Add reset password endpoint
+- Create email verification flow
+- Update user model with reset token
+
+Closes #123
+```
+
+### Pull Request Standards
+- **Title**: Clear, descriptive title
+- **Description**: What, why, and how changes were made
+- **Checklist**: All items completed
+- **Screenshots**: For UI changes
+- **Tests**: Include test results
+
+## 10. PERFORMANCE STANDARDS
+
+### Backend Performance
+- **Database Queries**: Use indexes, optimize queries
+- **Connection Pooling**: Proper pool size configuration
+- **Caching**: Implement caching for frequently accessed data
+- **Response Time**: API responses < 200ms for simple queries
+
+### Frontend Performance
+- **Bundle Size**: Keep initial bundle < 2MB
+- **Lazy Loading**: Use React.lazy for code splitting
+- **Image Optimization**: Optimize and compress images
+- **API Calls**: Debounce search inputs, paginate large lists
+
+### Database Performance
+```sql
+-- Use EXPLAIN ANALYZE to analyze query performance
+EXPLAIN ANALYZE SELECT * FROM documents WHERE user_id = 123;
+
+-- Create indexes for frequently queried columns
+CREATE INDEX idx_documents_user_status ON documents(user_id, status);
+
+-- Use pagination for large result sets
+SELECT * FROM documents 
+WHERE user_id = 123 
+ORDER BY created_at DESC 
+LIMIT 20 OFFSET 0;
+```
+
+## 11. ERROR HANDLING STANDARDS
+
+### Backend Error Handling
+```python
+from app.utils.error_handlers import APIError
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        'success': False,
+        'error': {
+            'code': 'NOT_FOUND',
+            'message': 'Resource not found'
+        }
+    }), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    # Log error for monitoring
+    app.logger.error(f'Server Error: {str(error)}')
+    return jsonify({
+        'success': False,
+        'error': {
+            'code': 'INTERNAL_ERROR',
+            'message': 'An unexpected error occurred'
+        }
+    }), 500
+```
+
+### Frontend Error Handling
+```javascript
+// Custom hook for error handling
+const useErrorHandler = () => {
+    const [error, setError] = useState(null);
+
+    const handleError = (error) => {
+        console.error('Error:', error);
+        setError(error.message || 'An error occurred');
+    };
+
+    const clearError = () => setError(null);
+
+    return { error, handleError, clearError };
+};
+
+// Usage in components
+const Component = () => {
+    const { error, handleError } = useErrorHandler();
+
+    const handleApiCall = async () => {
+        try {
+            await api.post('/endpoint');
+        } catch (err) {
+            handleError(err);
+        }
+    };
+
+    return (
+        <div>
+            {error && <ErrorAlert message={error} />}
+            {/* Component content */}
+        </div>
+    );
+};
+```
+
+## 12. DEPLOYMENT STANDARDS
+
+### Environment Configuration
+```
+# .env.example
+FLASK_SECRET_KEY=your-secret-key
+DATABASE_URL=postgresql://user:pass@localhost/dbname
+JWT_SECRET_KEY=your-jwt-secret
+FRONTEND_URL=http://localhost:3000
+```
+
+### Production Checklist
+- [ ] Environment variables configured
+- [ ] Database migrations applied
+- [ ] SSL certificates installed
+- [ ] Security headers configured
+- [ ] Logging configured
+- [ ] Monitoring set up
+- [ ] Backup strategy implemented
+
+### Build Process
+```bash
+# Frontend build
+cd frontend
+npm run build
+
+# Backend deployment
+pip install -r requirements.txt
+export FLASK_ENV=production
+python run.py
+```
+
+## 13. MONITORING AND LOGGING
+
+### Logging Standards
+```python
+import logging
+from app.services.logging_service import Logger
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Usage
+logger = Logger(__name__)
+logger.info("User login successful", extra={"user_id": user_id})
+logger.error("Database connection failed", extra={"error": str(e)})
+```
+
+### Error Monitoring
+- **Application Logs**: All errors logged with context
+- **Performance Monitoring**: Track response times and error rates
+- **User Analytics**: Monitor user behavior and feature usage
+- **Health Checks**: Implement health check endpoints
+
+## 14. MAINTENANCE STANDARDS
+
+### Code Maintenance
+- **Regular Updates**: Keep dependencies updated
+- **Code Reviews**: All code must be reviewed
+- **Refactoring**: Regular code cleanup and optimization
+- **Documentation Updates**: Keep documentation current
+
+### Security Maintenance
+- **Dependency Scanning**: Regular security scans
+- **Access Review**: Periodic access control review
+- **Security Updates**: Apply security patches promptly
+- **Backup Verification**: Regular backup testing
+
+## 15. TEAM COLLABORATION
+
+### Communication Standards
+- **Daily Standups**: Progress updates and blockers
+- **Code Reviews**: Constructive feedback within 24 hours
+- **Documentation**: Keep team docs updated
+- **Knowledge Sharing**: Share learnings and best practices
+
+### Onboarding Process
+- [ ] Development environment setup
+- [ ] Codebase walkthrough
+- [ ] Architecture overview
+- [ ] First small task assignment
+- [ ] Mentorship assignment
+
+---
+
+## ENFORCEMENT
+
+These standards are **mandatory** for all developers working on this project. Violations will result in:
+1. Code review rejection
+2. Required refactoring
+3. Team discussion for recurring issues
+
+**Last Updated**: January 2024
+**Version**: 1.0
+**Next Review**: Quarterly

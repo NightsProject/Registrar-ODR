@@ -329,9 +329,217 @@ class AvailableDates:
                     "is_available": bool(row[1]),
                     "reason": row[2] or ""
                 })
+
             return restrictions
         except Exception as e:
             print(f"Error fetching upcoming restrictions: {e}")
             return []
+        finally:
+            cur.close()
+
+class DomainWhitelist:
+    @staticmethod
+    def get_all():
+        """Fetch all domains from whitelist."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT id, domain, description, is_active, created_at, updated_at FROM domain_whitelist ORDER BY domain")
+            rows = cur.fetchall()
+            domains = []
+            for row in rows:
+                domains.append({
+                    "id": row[0],
+                    "domain": row[1],
+                    "description": row[2] or "",
+                    "is_active": bool(row[3]),
+                    "created_at": row[4].strftime("%Y-%m-%d %H:%M:%S") if row[4] else "",
+                    "updated_at": row[5].strftime("%Y-%m-%d %H:%M:%S") if row[5] else ""
+                })
+            return domains
+        except Exception as e:
+            print(f"Error fetching domain whitelist: {e}")
+            return []
+        finally:
+            cur.close()
+
+    @staticmethod
+    def get_by_id(domain_id):
+        """Fetch a domain by ID."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT id, domain, description, is_active, created_at, updated_at FROM domain_whitelist WHERE id = %s", (domain_id,))
+            row = cur.fetchone()
+            if row:
+                return {
+                    "id": row[0],
+                    "domain": row[1],
+                    "description": row[2] or "",
+                    "is_active": bool(row[3]),
+                    "created_at": row[4].strftime("%Y-%m-%d %H:%M:%S") if row[4] else "",
+                    "updated_at": row[5].strftime("%Y-%m-%d %H:%M:%S") if row[5] else ""
+                }
+            return None
+        except Exception as e:
+            print(f"Error fetching domain by ID {domain_id}: {e}")
+            return None
+        finally:
+            cur.close()
+
+    @staticmethod
+    def get_by_domain(domain):
+        """Fetch a domain by domain string."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT id, domain, description, is_active, created_at, updated_at FROM domain_whitelist WHERE domain = %s", (domain,))
+            row = cur.fetchone()
+            if row:
+                return {
+                    "id": row[0],
+                    "domain": row[1],
+                    "description": row[2] or "",
+                    "is_active": bool(row[3]),
+                    "created_at": row[4].strftime("%Y-%m-%d %H:%M:%S") if row[4] else "",
+                    "updated_at": row[5].strftime("%Y-%m-%d %H:%M:%S") if row[5] else ""
+                }
+            return None
+        except Exception as e:
+            print(f"Error fetching domain {domain}: {e}")
+            return None
+        finally:
+            cur.close()
+
+    @staticmethod
+    def add(domain, description="", is_active=True):
+        """Add a new domain to whitelist."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                "INSERT INTO domain_whitelist (domain, description, is_active) VALUES (%s, %s, %s)",
+                (domain, description, is_active)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            print(f"Error adding domain {domain}: {e}")
+            return False
+        finally:
+            cur.close()
+
+    @staticmethod
+    def update(domain_id, domain=None, description=None, is_active=None):
+        """Update an existing domain."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            # Build dynamic update query
+            updates = []
+            params = []
+            
+            if domain is not None:
+                updates.append("domain = %s")
+                params.append(domain)
+            
+            if description is not None:
+                updates.append("description = %s")
+                params.append(description)
+                
+            if is_active is not None:
+                updates.append("is_active = %s")
+                params.append(is_active)
+            
+            updates.append("updated_at = CURRENT_TIMESTAMP")
+            params.append(domain_id)
+            
+            if not updates:
+                return True  # Nothing to update
+                
+            query = f"UPDATE domain_whitelist SET {', '.join(updates)} WHERE id = %s"
+            cur.execute(query, params)
+            conn.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            conn.rollback()
+            print(f"Error updating domain {domain_id}: {e}")
+            return False
+        finally:
+            cur.close()
+
+    @staticmethod
+    def delete(domain_id):
+        """Delete a domain from whitelist."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("DELETE FROM domain_whitelist WHERE id = %s", (domain_id,))
+            conn.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            conn.rollback()
+            print(f"Error deleting domain {domain_id}: {e}")
+            return False
+        finally:
+            cur.close()
+
+    @staticmethod
+    def is_domain_allowed(domain):
+        """Check if a domain is allowed for authentication."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                "SELECT is_active FROM domain_whitelist WHERE domain = %s AND is_active = TRUE",
+                (domain,)
+            )
+            row = cur.fetchone()
+            return row is not None
+        except Exception as e:
+            print(f"Error checking domain {domain}: {e}")
+            return False
+        finally:
+            cur.close()
+
+    @staticmethod
+    def get_active_domains():
+        """Get all active domains for dropdown/selection purposes."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT domain FROM domain_whitelist WHERE is_active = TRUE ORDER BY domain")
+            rows = cur.fetchall()
+            return [row[0] for row in rows]
+        except Exception as e:
+            print(f"Error fetching active domains: {e}")
+            return []
+        finally:
+            cur.close()
+
+    @staticmethod
+    def toggle_active_status(domain_id):
+        """Toggle the active status of a domain."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            # Get current status
+            cur.execute("SELECT is_active FROM domain_whitelist WHERE id = %s", (domain_id,))
+            row = cur.fetchone()
+            if not row:
+                return False
+            
+            new_status = not row[0]
+            cur.execute(
+                "UPDATE domain_whitelist SET is_active = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                (new_status, domain_id)
+            )
+            conn.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            conn.rollback()
+            print(f"Error toggling domain status {domain_id}: {e}")
+            return False
         finally:
             cur.close()

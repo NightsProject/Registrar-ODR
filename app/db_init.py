@@ -305,6 +305,7 @@ def ready_max_request_settings_table():
    execute_query(query)
 
 
+
 def ready_open_request_restriction_table():
    query = """
    CREATE TABLE IF NOT EXISTS open_request_restriction (
@@ -312,7 +313,8 @@ def ready_open_request_restriction_table():
        start_time TIME NOT NULL,
        end_time TIME NOT NULL,
        available_days JSONB NOT NULL,
-       announcement TEXT DEFAULT ''
+       announcement TEXT DEFAULT '',
+       test_mode BOOLEAN DEFAULT FALSE
    )
    """
    execute_query(query)
@@ -322,7 +324,24 @@ def ready_open_request_restriction_table():
    ALTER TABLE open_request_restriction ADD COLUMN IF NOT EXISTS announcement TEXT DEFAULT ''
    """
    execute_query(alter_query)
+   
 
+   # Add test_mode column if it doesn't exist
+   alter_query_test_mode = """
+   ALTER TABLE open_request_restriction ADD COLUMN IF NOT EXISTS test_mode BOOLEAN DEFAULT FALSE
+   """
+   execute_query(alter_query_test_mode)
+   
+   # Add test origin tracking columns if they don't exist
+   alter_query_students = """
+   ALTER TABLE students ADD COLUMN IF NOT EXISTS is_test_origin BOOLEAN DEFAULT FALSE
+   """
+   execute_query(alter_query_students)
+   
+   alter_query_admins = """
+   ALTER TABLE admins ADD COLUMN IF NOT EXISTS is_test_origin BOOLEAN DEFAULT FALSE
+   """
+   execute_query(alter_query_admins)
 
 def ready_admin_settings_table():
    query = """
@@ -358,9 +377,6 @@ def ready_others_docs_table():
    execute_query(alter_query)
 
 
-
-
-
 def ready_changes_table():
    query = """
    CREATE TABLE IF NOT EXISTS changes (
@@ -376,6 +392,7 @@ def ready_changes_table():
    )
    """
    execute_query(query)
+
 
 def ready_available_dates_table():
    """Create table for managing date-specific availability restrictions."""
@@ -396,6 +413,87 @@ def ready_available_dates_table():
    CREATE INDEX IF NOT EXISTS idx_available_dates_date ON available_dates(date)
    """
    execute_query(index_query)
+
+
+def ready_feedback_table():
+   """Create table for test mode feedback system."""
+   query = """
+   CREATE TABLE IF NOT EXISTS feedback (
+       feedback_id SERIAL PRIMARY KEY,
+       name VARCHAR(100) NOT NULL,
+       email VARCHAR(100) NOT NULL,
+       feedback_type VARCHAR(50) NOT NULL CHECK (feedback_type IN ('Bug Report', 'Feature Request', 'General Feedback')),
+       description TEXT NOT NULL,
+       steps_to_reproduce TEXT,
+       submitted_at TIMESTAMP DEFAULT NOW(),
+       status VARCHAR(20) DEFAULT 'NEW' CHECK (status IN ('NEW', 'IN PROGRESS', 'RESOLVED', 'CLOSED'))
+   )
+   """
+   execute_query(query)
+   
+   # Create index for fast feedback lookups
+   index_query = """
+   CREATE INDEX IF NOT EXISTS idx_feedback_submitted_at ON feedback(submitted_at DESC)
+   """
+   execute_query(index_query)
+
+def ready_test_students_table():
+   """Create test students table for enhanced test mode."""
+   query = """
+   CREATE TABLE IF NOT EXISTS test_students (
+       student_id VARCHAR(20) PRIMARY KEY,
+       full_name VARCHAR(100) NOT NULL,
+       contact_number VARCHAR(20),
+       email VARCHAR(100),
+       liability_status BOOLEAN DEFAULT FALSE,
+       firstname VARCHAR(50) NOT NULL,
+       lastname VARCHAR(50) NOT NULL,
+       college_code VARCHAR(20),
+       created_at TIMESTAMP DEFAULT NOW(),
+       updated_at TIMESTAMP DEFAULT NOW()
+   )
+   """
+   execute_query(query)
+
+
+def ready_test_admins_table():
+   """Create test admins table for enhanced test mode."""
+   query = """
+   CREATE TABLE IF NOT EXISTS test_admins (
+       email VARCHAR(100) PRIMARY KEY,
+       role VARCHAR(50) NOT NULL,
+       profile_picture VARCHAR(500),
+       created_at TIMESTAMP DEFAULT NOW(),
+       updated_at TIMESTAMP DEFAULT NOW()
+   )
+   """
+   execute_query(query)
+
+def ready_domain_whitelist_table():
+   """Create domain whitelist table for admin authentication."""
+   query = """
+   CREATE TABLE IF NOT EXISTS domain_whitelist (
+       id SERIAL PRIMARY KEY,
+       domain VARCHAR(255) NOT NULL UNIQUE,
+       description VARCHAR(500),
+       is_active BOOLEAN DEFAULT TRUE,
+       created_at TIMESTAMP DEFAULT NOW(),
+       updated_at TIMESTAMP DEFAULT NOW()
+   )
+   """
+   execute_query(query)
+   
+   # Create index for fast domain lookups
+   index_query = """
+   CREATE INDEX IF NOT EXISTS idx_domain_whitelist_domain ON domain_whitelist(domain)
+   """
+   execute_query(index_query)
+   
+   # Create index for active domains
+   active_index_query = """
+   CREATE INDEX IF NOT EXISTS idx_domain_whitelist_active ON domain_whitelist(is_active)
+   """
+   execute_query(active_index_query)
 
 
 # ==========================
@@ -476,6 +574,7 @@ def create_performance_indexes():
 
 
 
+
 def populate_independent_tables():
    """Populate all tables except request-related ones."""
    conn = get_connection()
@@ -483,11 +582,7 @@ def populate_independent_tables():
    try:
        # Students data
        student_values = [
-           ("2025-1011", "John Smith", "639518876143", "john.smith@example.com", False, "John", "Smith", "CCS"),
-           ("2025-1012", "Maria Garcia", "09172345678", "maria.garcia@example.com", True, "Maria", "Garcia", "COE"),
-           ("2025-1013", "David Johnson", "09173456789", "david.johnson@example.com", False, "David", "Johnson", "CAS"),
-           ("2025-1014", "Emma Wilson", "09174567890", "emma.wilson@example.com", True, "Emma", "Wilson", "CBA"),
-           ("2025-1015", "Michael Brown", "09175678901", "michael.brown@example.com", False, "Michael", "Brown", "CCS")
+           ("2025-1011", "Nights Project", "639518876143", "nightnightproject@gmail.com", False, "Nights", "Project", "CCS")
        ]
        extras.execute_values(
            cur,
@@ -529,7 +624,7 @@ def populate_independent_tables():
            ("DOC0005", "Certification of Grades", "Summary of academic performance for specific period", "/assets/logos/grades.png", 60.00, False, False),
            ("DOC0006", "Authentication of Documents", "Official verification of document authenticity", "/assets/logos/authentication.png", 80.00, False, True),
            ("DOC0007", "Replacement of Lost Diploma", "Duplicate diploma for lost or damaged original", "/assets/logos/replacement.png", 200.00, False, False),
-           ("DOC0008", "Course Description", "Detailed description of subjects taken", "/assets/logos/course_desc.png", 40.00, False, False),
+           ("DOC0008", "Detailed description of subjectsCourse Description", " taken", "/assets/logos/course_desc.png", 40.00, False, False),
            ("DOC0009", "Ranking Certificate", "Academic ranking among graduating class", "/assets/logos/ranking.png", 65.00, False, False),
            ("DOC0010", "Special Order/Citation", "Recognition of academic achievements or awards", "/assets/logos/awards.png", 55.00, False, False)
        ]
@@ -579,77 +674,6 @@ def populate_independent_tables():
 
 
 
-       # Get current timestamps for realistic data
-       now = datetime.datetime.now()
-       yesterday = now - datetime.timedelta(days=1)
-       two_days_ago = now - datetime.timedelta(days=2)
-       three_days_ago = now - datetime.timedelta(days=3)
-
-       # Requests
-       request_values = [
-           ("R0000001", "2025-1011", "John Smith", "639518876143", "john.smith@example.com", "Email", "PENDING", False, 250.00, three_days_ago, None, "Initial request submitted", "regular", "CCS"),
-           ("R0000002", "2025-1012", "Maria Garcia", "09172345678", "maria.garcia@example.com", "SMS", "IN-PROGRESS", True, 75.00, two_days_ago, yesterday, "Processing in progress", "regular", "COE"),
-           ("R0000003", "2025-1013", "David Johnson", "09173456789", "david.johnson@example.com", "Email", "DOC-READY", True, 150.00, yesterday, yesterday, "Documents ready for pickup", "urgent", "CAS"),
-           ("R0000004", "2025-1014", "Emma Wilson", "09174567890", "emma.wilson@example.com", "SMS", "RELEASED", True, 100.00, yesterday, yesterday, "Released to student", "regular", "CBA"),
-           ("R0000005", "2025-1015", "Michael Brown", "09175678901", "michael.brown@example.com", "Email", "REJECTED", False, 50.00, two_days_ago, None, "Incomplete requirements", "regular", "CCS"),
-           ("R0000006", "2025-1011", "John Smith", "639518876143", "john.smith@example.com", "SMS", "PENDING", False, 200.00, now, None, "Second request for different documents", "urgent", "CCS"),
-           ("R0000007", "2025-1012", "Maria Garcia", "09172345678", "maria.garcia@example.com", "Email", "IN-PROGRESS", True, 125.00, yesterday, yesterday, "Processing additional documents", "regular", "COE"),
-           ("R0000008", "2025-1013", "David Johnson", "09173456789", "david.johnson@example.com", "SMS", "PENDING", False, 300.00, now, None, "Multiple documents requested", "bulk", "CAS"),
-       ]
-
-       extras.execute_values(
-           cur,
-           """
-           INSERT INTO requests (request_id, student_id, full_name, contact_number, email, preferred_contact, status, payment_status, total_cost, requested_at, payment_date, remarks, order_type, college_code)
-           VALUES %s
-           ON CONFLICT (request_id) DO NOTHING
-           """,
-           request_values
-       )
-
-       # Request Documents
-       req_doc_values = [
-           ("R0000001", "DOC0001", 1),
-           ("R0000001", "DOC0002", 2),
-           ("R0000002", "DOC0002", 1),
-           ("R0000003", "DOC0001", 1),
-           ("R0000003", "DOC0003", 1),
-           ("R0000004", "DOC0003", 1),
-           ("R0000005", "DOC0001", 1),
-           ("R0000006", "DOC0002", 1),
-           ("R0000007", "DOC0001", 1),
-           ("R0000008", "DOC0001", 2),
-           ("R0000008", "DOC0002", 1),
-           ("R0000008", "DOC0003", 1),
-       ]
-       cur.executemany(
-           "INSERT INTO request_documents (request_id, doc_id, quantity) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-           req_doc_values
-       )
-
-       # Request Requirements Links (simulate uploaded files)
-       req_req_links_values = [
-           ("R0000001", "REQ0001", "uploads/R0000001_REQ0001_valid_id.pdf"),
-           ("R0000001", "REQ0002", "uploads/R0000001_REQ0002_proof_address.jpg"),
-           ("R0000002", "REQ0001", "uploads/R0000002_REQ0001_valid_id.png"),
-           ("R0000003", "REQ0001", "uploads/R0000003_REQ0001_valid_id.pdf"),
-           ("R0000003", "REQ0002", "uploads/R0000003_REQ0002_proof_address.jpg"),
-           ("R0000003", "REQ0003", "uploads/R0000003_REQ0003_photo.jpg"),
-           ("R0000004", "REQ0001", "uploads/R0000004_REQ0001_valid_id.pdf"),
-           ("R0000004", "REQ0003", "uploads/R0000004_REQ0003_photo.png"),
-           ("R0000005", "REQ0001", "uploads/R0000005_REQ0001_valid_id.pdf"),
-           ("R0000005", "REQ0002", "uploads/R0000005_REQ0002_proof_address.jpg"),
-           ("R0000008", "REQ0001", "uploads/R0000008_REQ0001_valid_id.pdf"),
-           ("R0000008", "REQ0002", "uploads/R0000008_REQ0002_proof_address.jpg"),
-           ("R0000008", "REQ0003", "uploads/R0000008_REQ0003_photo.jpg"),
-       ]
-       cur.executemany(
-           "INSERT INTO request_requirements_links (request_id, requirement_id, file_path) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-           req_req_links_values
-       )
-
-
-
 
        # Insert default admin_fee if it doesn't exist
        cur.execute(
@@ -657,48 +681,32 @@ def populate_independent_tables():
            ('admin_fee', 10.00)
        )
 
+
        # Insert default open request restriction settings if they don't exist
        cur.execute(
            """
-           INSERT INTO open_request_restriction (id, start_time, end_time, available_days, announcement)
-           VALUES (1, %s, %s, %s, %s)
+           INSERT INTO open_request_restriction (id, start_time, end_time, available_days, announcement, test_mode)
+           VALUES (1, %s, %s, %s, %s, %s)
            ON CONFLICT (id) DO NOTHING
            """,
-           ('09:00:00', '17:00:00', '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]', '')
+           ('09:00:00', '17:00:00', '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]', '', False)
        )
 
-       # Insert sample admin data
-       admin_values = [
-           ("admin1@registrar.edu", "admin"),
-           ("admin2@registrar.edu", "staff"),
-           ("admin3@registrar.edu", "senior_admin")
-       ]
-       cur.executemany(
-           "INSERT INTO admins (email, role) VALUES (%s, %s) ON CONFLICT (email) DO NOTHING",
-           admin_values
+       # Insert default domain whitelist for backward compatibility
+       cur.execute(
+           """
+           INSERT INTO domain_whitelist (domain, description, is_active)
+           VALUES (%s, %s, %s)
+           ON CONFLICT (domain) DO NOTHING
+           """,
+           ('g.msuiit.edu.ph', 'Default domain for MSUIIT administration', True)
        )
 
-       # Insert sample admin settings
-       admin_settings_values = [
-           ("admin1@registrar.edu", "max_requests", "15"),
-           ("admin2@registrar.edu", "max_requests", "10"),
-           ("admin3@registrar.edu", "max_requests", "20")
-       ]
-       cur.executemany(
-           "INSERT INTO admin_settings (admin_id, key, value) VALUES (%s, %s, %s) ON CONFLICT (admin_id, key) DO NOTHING",
-           admin_settings_values
-       )
 
-       # Insert sample request assignments
-       assignment_values = [
-           ("R0000002", "admin1@registrar.edu"),
-           ("R0000003", "admin2@registrar.edu"),
-           ("R0000007", "admin1@registrar.edu")
-       ]
-       cur.executemany(
-           "INSERT INTO request_assignments (request_id, admin_id) VALUES (%s, %s) ON CONFLICT (request_id) DO NOTHING",
-           assignment_values
-       )
+
+
+    
+
        conn.commit()
        print("Independent tables populated successfully.")
    except Exception as e:
@@ -729,7 +737,7 @@ def populate_logs_table():
                """
                INSERT INTO logs (admin_id, action, details, request_id, timestamp)
                VALUES (%s, %s, %s, %s, %s)
-               ON CONFLICT DO NOTHING
+               ON CONFLICT (log_id) DO NOTHING
                """,
                (admin_id, action, details, request_id, timestamp)
            )
@@ -759,6 +767,9 @@ def insert_sample_data():
 
 
 
+
+
+
 def initialize_db():
    """Initialize database and all tables."""
    create_database()
@@ -777,10 +788,14 @@ def initialize_db():
    ready_admin_settings_table()
    ready_open_request_restriction_table()
    ready_fee_table()
-   insert_sample_data()
+   #insert_sample_data()
    ready_others_docs_table()
    ready_changes_table()
    ready_available_dates_table()
+   ready_feedback_table()
+   ready_test_students_table()
+   ready_test_admins_table()
+   ready_domain_whitelist_table()
    print("Database and tables initialized successfully.")
 
 
