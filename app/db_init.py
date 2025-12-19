@@ -377,9 +377,6 @@ def ready_others_docs_table():
    execute_query(alter_query)
 
 
-
-
-
 def ready_changes_table():
    query = """
    CREATE TABLE IF NOT EXISTS changes (
@@ -429,7 +426,7 @@ def ready_feedback_table():
        description TEXT NOT NULL,
        steps_to_reproduce TEXT,
        submitted_at TIMESTAMP DEFAULT NOW(),
-       status VARCHAR(20) DEFAULT 'NEW' CHECK (status IN ('NEW', 'IN PROGRESS', 'RESOLVED', 'CLOSED')),
+       status VARCHAR(20) DEFAULT 'NEW' CHECK (status IN ('NEW', 'IN PROGRESS', 'RESOLVED', 'CLOSED'))
    )
    """
    execute_query(query)
@@ -702,7 +699,7 @@ def populate_logs_table():
                """
                INSERT INTO logs (admin_id, action, details, request_id, timestamp)
                VALUES (%s, %s, %s, %s, %s)
-               ON CONFLICT DO NOTHING
+               ON CONFLICT (log_id) DO NOTHING
                """,
                (admin_id, action, details, request_id, timestamp)
            )

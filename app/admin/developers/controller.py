@@ -8,8 +8,6 @@ import re
 
 
 @developers_bp.route("/api/developers/test-mode", methods=["GET"])
-@jwt_required()
-@jwt_required_with_role("developer")
 def get_test_mode():
     """Get current test mode setting."""
     try:
