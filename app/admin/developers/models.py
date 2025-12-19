@@ -350,10 +350,6 @@ class TestRegistration:
             # Get current test mode state
             test_mode = TestModeSettings.get_test_mode()
             
-            # Validate email uniqueness across all tables
-            if not TestModeSettings.validate_email_uniqueness(admin_data['email']):
-                raise ValueError("Email already exists in admins, or test_admins tables")
-
             # Register in test_admins table first
             cur.execute("""
                 INSERT INTO test_admins (email, role, profile_picture)
