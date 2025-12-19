@@ -182,9 +182,9 @@ class Feedback:
             
             cur.execute("""
                 INSERT INTO feedback (name, email, feedback_type, description, steps_to_reproduce)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING feedback_id
-            """, (name, email, feedback_type, description, steps_to_reproduce, test_mode))
+            """, (name, email, feedback_type, description, steps_to_reproduce))
             feedback_id = cur.fetchone()[0]
             conn.commit()
             print(f"Feedback {feedback_id} created with test_origin = {test_mode}")

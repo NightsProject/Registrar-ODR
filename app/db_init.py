@@ -455,6 +455,7 @@ def ready_test_students_table():
    """
    execute_query(query)
 
+
 def ready_test_admins_table():
    """Create test admins table for enhanced test mode."""
    query = """
@@ -467,6 +468,32 @@ def ready_test_admins_table():
    )
    """
    execute_query(query)
+
+def ready_domain_whitelist_table():
+   """Create domain whitelist table for admin authentication."""
+   query = """
+   CREATE TABLE IF NOT EXISTS domain_whitelist (
+       id SERIAL PRIMARY KEY,
+       domain VARCHAR(255) NOT NULL UNIQUE,
+       description VARCHAR(500),
+       is_active BOOLEAN DEFAULT TRUE,
+       created_at TIMESTAMP DEFAULT NOW(),
+       updated_at TIMESTAMP DEFAULT NOW()
+   )
+   """
+   execute_query(query)
+   
+   # Create index for fast domain lookups
+   index_query = """
+   CREATE INDEX IF NOT EXISTS idx_domain_whitelist_domain ON domain_whitelist(domain)
+   """
+   execute_query(index_query)
+   
+   # Create index for active domains
+   active_index_query = """
+   CREATE INDEX IF NOT EXISTS idx_domain_whitelist_active ON domain_whitelist(is_active)
+   """
+   execute_query(active_index_query)
 
 
 # ==========================
@@ -547,6 +574,7 @@ def create_performance_indexes():
 
 
 
+
 def populate_independent_tables():
    """Populate all tables except request-related ones."""
    conn = get_connection()
@@ -596,7 +624,7 @@ def populate_independent_tables():
            ("DOC0005", "Certification of Grades", "Summary of academic performance for specific period", "/assets/logos/grades.png", 60.00, False, False),
            ("DOC0006", "Authentication of Documents", "Official verification of document authenticity", "/assets/logos/authentication.png", 80.00, False, True),
            ("DOC0007", "Replacement of Lost Diploma", "Duplicate diploma for lost or damaged original", "/assets/logos/replacement.png", 200.00, False, False),
-           ("DOC0008", "Course Description", "Detailed description of subjects taken", "/assets/logos/course_desc.png", 40.00, False, False),
+           ("DOC0008", "Detailed description of subjectsCourse Description", " taken", "/assets/logos/course_desc.png", 40.00, False, False),
            ("DOC0009", "Ranking Certificate", "Academic ranking among graduating class", "/assets/logos/ranking.png", 65.00, False, False),
            ("DOC0010", "Special Order/Citation", "Recognition of academic achievements or awards", "/assets/logos/awards.png", 55.00, False, False)
        ]
@@ -662,6 +690,16 @@ def populate_independent_tables():
            ON CONFLICT (id) DO NOTHING
            """,
            ('09:00:00', '17:00:00', '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]', '', False)
+       )
+
+       # Insert default domain whitelist for backward compatibility
+       cur.execute(
+           """
+           INSERT INTO domain_whitelist (domain, description, is_active)
+           VALUES (%s, %s, %s)
+           ON CONFLICT (domain) DO NOTHING
+           """,
+           ('g.msuiit.edu.ph', 'Default domain for MSUIIT administration', True)
        )
 
 
@@ -731,6 +769,7 @@ def insert_sample_data():
 
 
 
+
 def initialize_db():
    """Initialize database and all tables."""
    create_database()
@@ -756,6 +795,7 @@ def initialize_db():
    ready_feedback_table()
    ready_test_students_table()
    ready_test_admins_table()
+   ready_domain_whitelist_table()
    print("Database and tables initialized successfully.")
 
 

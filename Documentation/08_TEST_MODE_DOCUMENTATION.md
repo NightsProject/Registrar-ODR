@@ -11,10 +11,6 @@ The Test Mode implementation is a comprehensive feature flag system integrated i
 3. [Backend Implementation](#backend-implementation)
 4. [API Endpoints](#api-endpoints)
 5. [Data Flow and Integration](#data-flow-and-integration)
-6. [Security and Access Control](#security-and-access-control)
-7. [Usage and Management](#usage-and-management)
-8. [Best Practices](#best-practices)
-9. [Troubleshooting](#troubleshooting)
 
 ## Purpose and Functionality
 
@@ -91,6 +87,8 @@ CREATE TABLE IF NOT EXISTS feedback (
 - Status tracking for feedback management
 - Timestamp tracking for submission analysis
 
+
+
 #### `students` Table (Extended for Testing)
 
 ```sql
@@ -102,7 +100,8 @@ CREATE TABLE IF NOT EXISTS students (
     liability_status BOOLEAN DEFAULT FALSE,
     firstname VARCHAR(50) NOT NULL,
     lastname VARCHAR(50) NOT NULL,
-    college_code VARCHAR(20)
+    college_code VARCHAR(20),
+    is_test_origin BOOLEAN DEFAULT FALSE  -- NEW: Track test-originated records
 );
 ```
 
@@ -112,9 +111,43 @@ CREATE TABLE IF NOT EXISTS students (
 CREATE TABLE IF NOT EXISTS admins (
     email VARCHAR(100) PRIMARY KEY,
     role VARCHAR(50) NOT NULL,
-    profile_picture VARCHAR(500)
+    profile_picture VARCHAR(500),
+    is_test_origin BOOLEAN DEFAULT FALSE  -- NEW: Track test-originated records
 );
 ```
+
+#### `test_students` Table
+
+```sql
+CREATE TABLE IF NOT EXISTS test_students (
+    student_id VARCHAR(20) PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    contact_number VARCHAR(20),
+    email VARCHAR(100),
+    liability_status BOOLEAN DEFAULT FALSE,
+    firstname VARCHAR(50) NOT NULL,
+    lastname VARCHAR(50) NOT NULL,
+    college_code VARCHAR(20),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**Purpose:** Isolated test student data that can be transferred to main tables when test mode is activated.
+
+#### `test_admins` Table
+
+```sql
+CREATE TABLE IF NOT EXISTS test_admins (
+    email VARCHAR(100) PRIMARY KEY,
+    role VARCHAR(50) NOT NULL,
+    profile_picture VARCHAR(500),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**Purpose:** Isolated test admin data that can be transferred to main tables when test mode is activated.
 
 ### Indexes and Performance
 
@@ -129,11 +162,20 @@ CREATE INDEX IF NOT EXISTS idx_feedback_submitted_at ON feedback(submitted_at DE
 
 ### Models
 
+
+
 #### `TestModeSettings` Class
 
 **Location**: `app/admin/developers/models.py`
 
-**Purpose**: Core model for managing test mode state
+**Purpose**: Core model for managing test mode state with automatic data management and enhanced validation
+
+**Enhanced Methods:**
+
+- `transfer_test_data()`: Automatically transfers all data from test tables to main tables when test mode is activated
+- `cleanup_test_origin_data()`: Removes test-originated records from main tables when test mode is deactivated  
+- `validate_student_id_uniqueness()`: Validates student ID uniqueness across both students and test_students tables
+- `validate_email_uniqueness()`: Validates email uniqueness across all admin-related tables
 
 ```python
 class TestModeSettings:
@@ -154,16 +196,40 @@ class TestModeSettings:
 
     @staticmethod
     def update_test_mode(test_mode):
-        """Update test mode setting."""
+        """Update test mode setting with automatic transfer or cleanup."""
         conn = g.db_conn
         cur = conn.cursor()
         try:
+            # Get current test mode state
+            cur.execute("SELECT test_mode FROM open_request_restriction WHERE id = 1")
+            current_state = cur.fetchone()
+            old_test_mode = bool(current_state[0]) if current_state else False
+            
+            # Update test mode setting
             cur.execute("""
-                INSERT INTO open_request_restriction (id, test_mode)
-                VALUES (1, %s)
-                ON CONFLICT (id) DO UPDATE SET test_mode = EXCLUDED.test_mode
+                UPDATE open_request_restriction
+                SET test_mode = %s
+                WHERE id = 1;
             """, (test_mode,))
+            
+            # If turning test mode ON, transfer data from test tables to main tables
+            if not old_test_mode and test_mode:
+                print("Test mode turned ON - executing transfer operation")
+                transfer_result = TestModeSettings.transfer_test_data()
+                if not transfer_result:
+                    conn.rollback()
+                    return False
+            
+            # If turning test mode OFF, cleanup test-originated records from main tables
+            elif old_test_mode and not test_mode:
+                print("Test mode turned OFF - executing cleanup operation")
+                cleanup_result = TestModeSettings.cleanup_test_origin_data()
+                if not cleanup_result:
+                    conn.rollback()
+                    return False
+            
             conn.commit()
+            print(f"Test mode updated to {test_mode}")
             return True
         except Exception as e:
             conn.rollback()
@@ -171,13 +237,118 @@ class TestModeSettings:
             return False
         finally:
             cur.close()
+
+    @staticmethod
+    def transfer_test_data():
+        """Transfer all data from test tables to main tables."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            # Transfer students from test_students to students
+            cur.execute("""
+                INSERT INTO students (student_id, full_name, contact_number, email, 
+                                    firstname, lastname, college_code, liability_status, is_test_origin)
+                SELECT student_id, full_name, contact_number, email, 
+                       firstname, lastname, college_code, liability_status, TRUE
+                FROM test_students
+                ON CONFLICT (student_id) DO UPDATE SET
+                    full_name = EXCLUDED.full_name,
+                    contact_number = EXCLUDED.contact_number,
+                    email = EXCLUDED.email,
+                    firstname = EXCLUDED.firstname,
+                    lastname = EXCLUDED.lastname,
+                    college_code = EXCLUDED.college_code,
+                    is_test_origin = TRUE
+            """)
+            
+            # Transfer admins from test_admins to admins
+            cur.execute("""
+                INSERT INTO admins (email, role, profile_picture, is_test_origin)
+                SELECT email, role, profile_picture, TRUE
+                FROM test_admins
+                ON CONFLICT (email) DO UPDATE SET
+                    role = EXCLUDED.role,
+                    profile_picture = EXCLUDED.profile_picture,
+                    is_test_origin = TRUE
+            """)
+            
+            return True
+        except Exception as e:
+            print(f"Error transferring test data: {e}")
+            return False
+        finally:
+            cur.close()
+
+    @staticmethod
+    def cleanup_test_origin_data():
+        """Delete test-originated records from main tables."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            # Delete test-originated students
+            cur.execute("DELETE FROM students WHERE is_test_origin = TRUE")
+            
+            # Delete test-originated admins
+            cur.execute("DELETE FROM admins WHERE is_test_origin = TRUE")
+        
+            return True
+        except Exception as e:
+            print(f"Error cleaning up test origin data: {e}")
+            return False
+        finally:
+            cur.close()
+
+    @staticmethod
+    def validate_student_id_uniqueness(student_id):
+        """Check if student ID is unique across students and test_students tables."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            # Check in main students table
+            cur.execute("SELECT COUNT(*) FROM students WHERE student_id = %s", (student_id,))
+            main_count = cur.fetchone()[0]
+            
+            # Check in test_students table
+            cur.execute("SELECT COUNT(*) FROM test_students WHERE student_id = %s", (student_id,))
+            test_count = cur.fetchone()[0]
+            
+            return (main_count + test_count) == 0
+        except Exception as e:
+            print(f"Error validating student ID uniqueness: {e}")
+            return False
+        finally:
+            cur.close()
+
+    @staticmethod
+    def validate_email_uniqueness(email):
+        """Check if email is unique across tables (admins, test_admins)."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            # Check in main admins table
+            cur.execute("SELECT COUNT(*) FROM admins WHERE email = %s", (email,))
+            admins_count = cur.fetchone()[0]
+            
+            # Check in test_admins table
+            cur.execute("SELECT COUNT(*) FROM test_admins WHERE email = %s", (email,))
+            test_admins_count = cur.fetchone()[0]
+            
+            total_count = admins_count + test_admins_count
+            return total_count == 0
+        except Exception as e:
+            print(f"Error validating email uniqueness: {e}")
+            return False
+        finally:
+            cur.close()
 ```
 
 **Key Features:**
 - Singleton pattern (id = 1 for system-wide settings)
-- Error handling with fallback to False
-- Database transaction management
-- Upsert pattern for safe updates
+- Automatic data transfer when test mode is activated
+- Automatic cleanup when test mode is deactivated
+- Cross-table uniqueness validation
+- Enhanced error handling with transaction rollback
+- Dual registration support
 
 #### `Feedback` Class
 
@@ -204,30 +375,205 @@ class Feedback:
         """Delete feedback entry."""
 ```
 
+
+
 #### `TestRegistration` Class
 
-**Purpose**: Manage test data creation for students and admins
+**Purpose**: Manage test data creation with dual registration system and enhanced validation
+
+**Key Features:**
+- Dual registration system (test + main tables when test mode is ON)
+- Automatic test mode state checking for registration decisions
+- Cross-table uniqueness validation before registration
+- Transaction management with proper rollback on errors
+- Enhanced error handling with specific validation messages
+
+**Enhanced Methods:**
+- `create_student()`: Creates student with dual registration based on test mode state
+- `create_admin()`: Creates admin with dual registration based on test mode state  
+- `check_student_exists()`: Additional validation method for student existence checking
 
 ```python
 class TestRegistration:
     @staticmethod
     def create_student(student_data):
-        """Create or update student record."""
-        # Validates required fields and data format
-        
+        """Create student record with dual registration (test + main tables if test mode ON)."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            # Get current test mode state
+            test_mode = TestModeSettings.get_test_mode()
+            
+            # Validate student ID uniqueness across both students and test_students tables
+            if not TestModeSettings.validate_student_id_uniqueness(student_data['student_id']):
+                raise ValueError("Student ID already exists in students or test_students tables")
+    
+            # Register in test_students table first
+            cur.execute("""
+                INSERT INTO test_students (student_id, full_name, contact_number, email, 
+                                          firstname, lastname, college_code, liability_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (student_id) DO UPDATE SET
+                    full_name = EXCLUDED.full_name,
+                    contact_number = EXCLUDED.contact_number,
+                    email = EXCLUDED.email,
+                    firstname = EXCLUDED.firstname,
+                    lastname = EXCLUDED.lastname,
+                    college_code = EXCLUDED.college_code,
+                    updated_at = NOW()
+            """, (
+                student_data['student_id'],
+                student_data['full_name'],
+                student_data['contact_number'],
+                student_data['email'],
+                student_data['firstname'],
+                student_data['lastname'],
+                student_data['college_code'],
+                False  # liability_status default
+            ))
+            
+            # If test mode is ON, also register in main students table
+            if test_mode:
+                cur.execute("""
+                    INSERT INTO students (student_id, full_name, contact_number, email, 
+                                          firstname, lastname, college_code, liability_status, is_test_origin)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+                    ON CONFLICT (student_id) DO UPDATE SET
+                        full_name = EXCLUDED.full_name,
+                        contact_number = EXCLUDED.contact_number,
+                        email = EXCLUDED.email,
+                        firstname = EXCLUDED.firstname,
+                        lastname = EXCLUDED.lastname,
+                        college_code = EXCLUDED.college_code,
+                        is_test_origin = TRUE
+                """, (
+                    student_data['student_id'],
+                    student_data['full_name'],
+                    student_data['contact_number'],
+                    student_data['email'],
+                    student_data['firstname'],
+                    student_data['lastname'],
+                    student_data['college_code'],
+                    False  # liability_status default
+                ))
+            
+            conn.commit()
+            print(f"Student {student_data['student_id']} registered in {'both' if test_mode else 'test only'} tables")
+            return True
+        except ValueError as ve:
+            conn.rollback()
+            raise ve  # Re-raise validation errors
+        except Exception as e:
+            conn.rollback()
+            print(f"Error creating/updating student: {e}")
+            return False
+        finally:
+            cur.close()
+
     @staticmethod
     def create_admin(admin_data):
-        """Create or update admin record."""
-        # Validates role and email format
-        
+        """Create admin record with dual registration (test + main tables if test mode ON)."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            # Get current test mode state
+            test_mode = TestModeSettings.get_test_mode()
+            
+            # Validate email uniqueness across all tables
+            if not TestModeSettings.validate_email_uniqueness(admin_data['email']):
+                raise ValueError("Email already exists in admins, or test_admins tables")
+
+            # Register in test_admins table first
+            cur.execute("""
+                INSERT INTO test_admins (email, role, profile_picture)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (email) DO UPDATE SET
+                    role = EXCLUDED.role,
+                    profile_picture = EXCLUDED.profile_picture,
+                    updated_at = NOW()
+            """, (admin_data['email'], admin_data['role'], admin_data.get('profile_picture', '')))
+            
+            # If test mode is ON, also register in main admins table
+            if test_mode:
+                cur.execute("""
+                    INSERT INTO admins (email, role, profile_picture, is_test_origin)
+                    VALUES (%s, %s, %s, TRUE)
+                    ON CONFLICT (email) DO UPDATE SET
+                        role = EXCLUDED.role,
+                        profile_picture = EXCLUDED.profile_picture,
+                        is_test_origin = TRUE
+                """, (admin_data['email'], admin_data['role'], admin_data.get('profile_picture', '')))
+            
+            conn.commit()
+            print(f"Admin {admin_data['email']} registered in {'both' if test_mode else 'test only'} tables")
+            return True
+        except ValueError as ve:
+            conn.rollback()
+            raise ve  # Re-raise validation errors
+        except Exception as e:
+            conn.rollback()
+            print(f"Error creating/updating admin: {e}")
+            return False
+        finally:
+            cur.close()
+
     @staticmethod
     def get_student(student_id):
         """Get student by ID."""
-        
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT student_id, full_name, contact_number, email, 
+                       firstname, lastname, college_code
+                FROM students WHERE student_id = %s
+            """, (student_id,))
+            row = cur.fetchone()
+            if row:
+                return {
+                    "student_id": row[0],
+                    "full_name": row[1],
+                    "contact_number": row[2],
+                    "email": row[3],
+                    "firstname": row[4],
+                    "lastname": row[5],
+                    "college_code": row[6]
+                }
+            return None
+        except Exception as e:
+            print(f"Error fetching student: {e}")
+            return None
+        finally:
+            cur.close()
+
     @staticmethod
     def get_admin(email):
         """Get admin by email."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT email, role FROM admins WHERE email = %s", (email,))
+            row = cur.fetchone()
+            if row:
+                return {
+                    "email": row[0],
+                    "role": row[1]
+                }
+            return None
+        except Exception as e:
+            print(f"Error fetching admin: {e}")
+            return None
+        finally:
+            cur.close()
 ```
+
+**Key Features:**
+- Dual registration system (test + main tables)
+- Automatic test mode state checking
+- Cross-table uniqueness validation
+- Transaction management with rollback
+- Enhanced error handling
+- Support for automatic data transfer
 
 ### Controllers
 
@@ -316,10 +662,14 @@ def get_admin(email):
 | `/api/developers/feedback` | GET | Required | Developer | Get all feedback |
 | `/api/developers/feedback/<id>` | PUT | Required | Developer | Update feedback status |
 | `/api/developers/feedback/<id>` | DELETE | Required | Developer | Delete feedback |
+
 | `/api/developers/test-registration/student` | POST | None | Public | Register test student |
 | `/api/developers/test-registration/student/<id>` | GET | Required | Developer | Get test student |
 | `/api/developers/test-registration/admin` | POST | None | Public | Register test admin |
+
 | `/api/developers/test-registration/admin/<email>` | GET | Required | Developer | Get test admin |
+| `/api/developers/test-registration/validate/student` | POST | None | Public | Validate student ID uniqueness |
+| `/api/developers/test-registration/validate/admin` | POST | None | Public | Validate email uniqueness |
 
 ### Request/Response Formats
 
@@ -382,6 +732,7 @@ Content-Type: application/json
 }
 ```
 
+
 #### Register Test Student
 
 **Request:**
@@ -399,10 +750,119 @@ Content-Type: application/json
 }
 ```
 
-**Response:**
+
+**Response (Test Mode OFF):**
 ```json
 {
-  "message": "Student registered successfully"
+  "message": "Student registered successfully (test mode OFF - registered in test table only)"
+}
+```
+
+**Response (Test Mode ON):**
+```json
+{
+  "message": "Student registered successfully (test mode ON - registered in both tables)"
+}
+```
+
+**Error Response (Validation Failed):**
+```json
+{
+  "error": "Student ID already exists in students or test_students tables"
+}
+```
+
+#### Validate Student ID Uniqueness
+
+**Request:**
+```http
+POST /api/developers/test-registration/validate/student
+Content-Type: application/json
+
+{
+  "student_id": "2023123456",
+  "email": "john.doe@example.com"
+}
+```
+
+**Response (Valid):**
+```json
+{
+  "isValid": true,
+  "message": "Student ID are unique"
+}
+```
+
+
+**Response (Invalid):**
+```json
+{
+  "isValid": false,
+  "error": "Student ID already exists in students or test_students tables"
+}
+```
+
+#### Validate Admin Email Uniqueness
+
+**Request:**
+```http
+POST /api/developers/test-registration/validate/admin
+Content-Type: application/json
+
+{
+  "email": "test.admin@example.com"
+}
+```
+
+**Response (Valid):**
+```json
+{
+  "isValid": true,
+  "message": "Email is unique"
+}
+```
+
+
+**Response (Invalid):**
+```json
+{
+  "isValid": false,
+  "error": "Email already exists in students, test_students, admins, or test_admins tables"
+}
+```
+
+#### Register Test Admin
+
+**Request:**
+```http
+POST /api/developers/test-registration/admin
+Content-Type: application/json
+
+{
+  "email": "test.admin@example.com",
+  "role": "admin",
+  "profile_picture": "optional_url"
+}
+```
+
+**Response (Test Mode OFF):**
+```json
+{
+  "message": "Admin registered successfully (test mode OFF - registered in test table only)"
+}
+```
+
+**Response (Test Mode ON):**
+```json
+{
+  "message": "Admin registered successfully (test mode ON - registered in both tables)"
+}
+```
+
+**Error Response (Validation Failed):**
+```json
+{
+  "error": "Email already exists in admins, or test_admins tables"
 }
 ```
 
@@ -439,6 +899,7 @@ graph TD
     I --> J[Status Updates]
 ```
 
+
 ### Test Registration Flow
 
 ```mermaid
@@ -469,42 +930,6 @@ graph TD
    - Admin account setup for different roles
    - Data validation and integrity checks
 
-## Security and Access Control
-
-### Role-Based Access Control
-
-| Feature | Developer Access | Other Roles Access | Public Access |
-|---------|------------------|--------------------|---------------|
-| Test Mode Toggle | ✅ Full Control | ❌ No Access | ❌ No Access |
-| Test Mode Status | ✅ Read Only | ✅ Read Only | ❌ No Access |
-| Feedback Submission | ✅ Full Control | ✅ Full Control | ✅ Full Control |
-| Feedback Management | ✅ Full Control | ❌ No Access | ❌ No Access |
-| Test Student Registration | ✅ Full Control | ✅ Full Control | ✅ Full Control |
-| Test Admin Registration | ✅ Full Control | ✅ Full Control | ✅ Full Control |
-| Test Data Retrieval | ✅ Full Control | ❌ No Access | ❌ No Access |
-
-### Security Measures
-
-1. **JWT Authentication**
-   - All developer endpoints require valid JWT tokens
-   - Token validation with role claims
-   - Session management integration
-
-2. **Input Validation**
-   - Email format validation using regex patterns
-   - Phone number format validation (639xxxxxxxxx)
-   - Required field validation
-   - SQL injection prevention through parameterized queries
-
-3. **Database Security**
-   - Connection pooling with proper cleanup
-   - Transaction management with rollback on failure
-   - Error handling without information disclosure
-
-4. **Rate Limiting Considerations**
-   - Feedback submission should include rate limiting
-   - Test registration endpoints may need throttling
-   - Developer endpoints have implicit protection through authentication
 
 ### Data Privacy
 
@@ -517,25 +942,6 @@ graph TD
    - Separate from production data
    - Clear identification as test data
    - Deletion and cleanup procedures
-
-## Usage and Management
-
-### Developer Operations
-
-#### Enabling Test Mode
-
-1. **Via API Call**
-```bash
-curl -X PUT /api/developers/test-mode \
-  -H "Authorization: Bearer <jwt_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"test_mode": true}'
-```
-
-2. **Via Database Direct** (Emergency Only)
-```sql
-UPDATE open_request_restriction SET test_mode = true WHERE id = 1;
-```
 
 #### Managing Feedback
 
@@ -553,217 +959,67 @@ UPDATE open_request_restriction SET test_mode = true WHERE id = 1;
    - Remove outdated or spam feedback
    - Permanent deletion from database
 
+
 #### Managing Test Data
 
 1. **Student Test Accounts**
    - Create with valid student ID format
    - Use realistic but fake contact information
    - Associate with test college codes
+   - **Enhanced Process**: Use validation endpoints to check uniqueness before registration
 
 2. **Admin Test Accounts**
    - Create with valid email addresses
    - Assign appropriate test roles
    - Use different roles for different test scenarios
+   - **Enhanced Process**: Validate email uniqueness across all tables before registration
 
-### Monitoring and Logging
+#### Validation Procedures
 
-#### System Logs
+1. **Student ID Validation**
+   ```bash
+   curl -X POST /api/developers/test-registration/validate/student \
+     -H "Content-Type: application/json" \
+     -d '{"student_id": "2023123456", "email": "student@example.com"}'
+   ```
 
-1. **Test Mode Changes**
-   - Logged with developer identity
-   - Includes old and new values
-   - Timestamp and IP address
+2. **Admin Email Validation**
+   ```bash
+   curl -X POST /api/developers/test-registration/validate/admin \
+     -H "Content-Type: application/json" \
+     -d '{"email": "admin@example.com"}'
+   ```
 
-2. **Feedback Submissions**
-   - Public submissions logged
-   - Includes user agent and IP
-   - Error logging for failed submissions
 
-3. **Test Registration Activities**
-   - All test data creation logged
-   - Developer-initiated actions tracked
-   - Validation failures logged
+3. **Registration with Validation**
+   - Always validate uniqueness before attempting registration
+   - Use validation endpoints for real-time feedback
+   - Handle validation errors gracefully in user interfaces
 
-#### Database Monitoring
-
-```sql
--- Check current test mode status
-SELECT test_mode, updated_at FROM open_request_restriction WHERE id = 1;
-
--- Monitor feedback submissions
-SELECT feedback_type, status, submitted_at 
-FROM feedback 
-ORDER BY submitted_at DESC;
-
--- Check test data volume
-SELECT 
-  (SELECT COUNT(*) FROM students WHERE student_id LIKE 'TEST%') as test_students,
-  (SELECT COUNT(*) FROM admins WHERE email LIKE '%@test.%') as test_admins;
-```
-
-## Best Practices
-
-### Development Workflow
+#### Automatic Data Management Workflows
 
 1. **Test Mode Activation**
-   - Always activate test mode before development testing
-   - Document the reason for activation
-   - Set up monitoring for test activities
+   - **Pre-Activation**: Prepare test data in `test_students` and `test_admins` tables
+   - **Activation Process**: When test mode is turned ON:
+     - All data from test tables automatically transfers to main tables
+     - Records are marked with `is_test_origin = TRUE`
+     - System becomes fully operational with test data
+   - **Post-Activation**: Test data is immediately available in main system
 
-2. **Feedback Collection**
-   - Encourage thorough feedback during test phases
-   - Respond promptly to critical feedback
-   - Use feedback to improve user experience
+2. **Test Mode Deactivation**
+   - **Pre-Deactivation**: All test activities should be completed
+   - **Deactivation Process**: When test mode is turned OFF:
+     - Automatically deletes all test-originated records from main tables
+     - Test tables remain intact for future use
+     - System returns to production-only state
+   - **Post-Deactivation**: Clean production environment restored
 
-3. **Test Data Management**
-   - Use consistent naming conventions for test data
-   - Clean up test data after testing phases
-   - Avoid creating production-like test accounts
+3. **Data Synchronization**
+   - Test mode activation synchronizes data from test tables to main tables
+   - Main tables receive complete copy with test origin tracking
+   - Conflict resolution handled via ON CONFLICT UPDATE clauses
+   - Transaction-based operation ensures data consistency
 
-### Production Considerations
-
-1. **Test Mode Security**
-   - Never leave test mode enabled in production
-   - Regular audits of test mode status
-   - Implement alerts for unexpected test mode changes
-
-2. **Data Privacy**
-   - Review feedback data regularly
-   - Implement data retention policies
-   - Ensure GDPR/privacy compliance
-
-3. **Performance Monitoring**
-   - Monitor feedback submission rates
-   - Check database performance during test phases
-   - Log and alert on unusual activities
-
-### Testing Best Practices
-
-1. **Automated Testing**
-   - Include test mode functionality in test suites
-   - Test both enabled and disabled states
-   - Validate security boundaries
-
-2. **Manual Testing**
-   - Test all endpoints with proper authentication
-   - Verify public endpoints work correctly
-   - Test error handling and edge cases
-
-3. **Integration Testing**
-   - Test interaction with other system components
-   - Verify logging and monitoring integration
-   - Test cleanup procedures
-
-## Troubleshooting
-
-### Common Issues
-
-#### Test Mode Not Responding
-
-**Symptoms:**
-- Test mode status not changing
-- API returns errors
-- No system-wide effect
-
-**Diagnosis:**
-```sql
--- Check database connectivity
-SELECT test_mode FROM open_request_restriction WHERE id = 1;
-
--- Check application logs
-SELECT * FROM logs WHERE action LIKE '%test_mode%' ORDER BY timestamp DESC;
-```
-
-**Solutions:**
-1. Verify database connection
-2. Check developer role permissions
-3. Restart application if necessary
-4. Review application logs for errors
-
-#### Feedback Submission Failures
-
-**Symptoms:**
-- Public users cannot submit feedback
-- API returns 500 errors
-- Missing feedback entries
-
-**Diagnosis:**
-1. Check database connectivity
-2. Verify table structure
-3. Review validation rules
-4. Check application logs
-
-**Solutions:**
-1. Verify `feedback` table exists and has correct structure
-2. Check database permissions
-3. Review validation logic
-4. Test with minimal feedback data
-
-#### Test Registration Issues
-
-**Symptoms:**
-- Cannot create test accounts
-- Validation errors
-- Database constraint violations
-
-**Diagnosis:**
-```sql
--- Check if test data already exists
-SELECT * FROM students WHERE student_id LIKE 'TEST%';
-SELECT * FROM admins WHERE email LIKE '%@test.%';
-```
-
-**Solutions:**
-1. Use unique identifiers for test data
-2. Verify all required fields are provided
-3. Check database constraints
-4. Use appropriate test college codes
-
-### Error Codes
-
-| HTTP Code | Error Type | Description | Resolution |
-|-----------|------------|-------------|------------|
-| 400 | Bad Request | Missing required fields | Check request payload |
-| 401 | Unauthorized | Invalid or missing JWT | Re-authenticate |
-| 403 | Forbidden | Insufficient role permissions | Check user role |
-| 404 | Not Found | Resource doesn't exist | Verify identifiers |
-| 500 | Internal Server Error | Database or system error | Check logs and database |
-
-### Debugging Procedures
-
-1. **Enable Debug Logging**
-   - Increase log level for developers
-   - Monitor test mode changes
-   - Track all API calls
-
-2. **Database Inspection**
-   - Verify table structures
-   - Check data integrity
-   - Monitor query performance
-
-3. **API Testing**
-   - Use tools like Postman or curl
-   - Test authentication flows
-   - Verify request/response formats
-
-### Support and Maintenance
-
-1. **Regular Maintenance**
-   - Clean up old test data
-   - Archive old feedback
-   - Review system logs
-
-2. **Performance Optimization**
-   - Monitor feedback submission rates
-   - Optimize database queries
-   - Review indexes and constraints
-
-3. **Security Audits**
-   - Regular role permission reviews
-   - Test mode access monitoring
-   - Data privacy compliance checks
-
----
 
 ## Conclusion
 

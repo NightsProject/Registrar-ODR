@@ -1,4 +1,5 @@
 
+
 from . import authentication_admin_bp
 from flask import jsonify, request, current_app, redirect, url_for, session
 from flask_jwt_extended import create_access_token, set_access_cookies, jwt_required, get_jwt_identity
@@ -6,7 +7,7 @@ from authlib.integrations.flask_client import OAuth
 from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FRONTEND_URL
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from ..settings.models import Admin
+from ..settings.models import Admin, DomainWhitelist
 import secrets
 from app.services.logging_service import LoggingService
 
@@ -67,13 +68,20 @@ def google_oauth_callback():
             frontend_error_url = f"{FRONTEND_URL}/admin/login?error=invalid_state"
             return redirect(frontend_error_url)
 
+
         token = google.authorize_access_token()
         user_info = google.parse_id_token(token, nonce=nonce)  # pass nonce here 
         profile_picture = user_info['picture']
         email = user_info.get("email")
-        hd = user_info.get("hd")
+        hd = email.split("@")[1] if email and "@" in email else None
 
-        if not email or hd != "g.msuiit.edu.ph":
+        if not email or not hd:
+            frontend_error_url = f"{FRONTEND_URL}/admin/login?error=invalid_credentials"
+            return redirect(frontend_error_url)
+
+        # Check if domain is allowed using whitelist
+        if not DomainWhitelist.is_domain_allowed(hd):
+            LoggingService.log_user_management("auth_failed", email, f"Unauthorized domain: {hd}")
             frontend_error_url = f"{FRONTEND_URL}/admin/login?error=unauthorized_domain"
             return redirect(frontend_error_url)
 
@@ -193,6 +201,7 @@ def logout():
         response = jsonify({"message": "Logout successful"})
         # Clear the JWT cookie
         set_access_cookies(response, "", max_age=0)
+
         return response, 200
     except Exception as e:
         current_app.logger.error(f"Error during logout: {e}")
