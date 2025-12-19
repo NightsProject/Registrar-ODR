@@ -1,7 +1,10 @@
 
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { authenticatedFetch } from "../../utils/csrf";
+import { validationService } from "../../services/registrationService";
 import "./TestModePopup.css";
+
 
 const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
 
@@ -9,6 +12,8 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
   const [userRole, setUserRole] = useState('');
   const [loading, setLoading] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [isValidating, setIsValidating] = useState(false);
   
   // Form states
   const [studentForm, setStudentForm] = useState({
@@ -25,6 +30,7 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
     role: 'staff'
   });
   
+
   const [feedbackForm, setFeedbackForm] = useState({
     name: '',
     email: '',
@@ -32,13 +38,12 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
     description: '',
     steps_to_reproduce: ''
   });
-
-
   // Reset forms when closing
   const handleClose = () => {
     setCurrentStep('role-selection');
     setUserRole('');
     setFeedbackSubmitted(false);
+    setValidationErrors({});
     setStudentForm({
       student_id: '',
       firstname: '',
@@ -62,12 +67,42 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
   };
 
 
-  // Student registration
+
+  // Student registration with enhanced validation
   const handleStudentSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setIsValidating(true);
     
     try {
+      // First, validate the form data locally
+      const validation = validationService.validateStudentData(studentForm);
+      if (!validation.isValid) {
+        setValidationErrors(validation.errors);
+        setLoading(false);
+        setIsValidating(false);
+        return;
+      }
+
+      // Then validate uniqueness across tables
+      const uniquenessCheck = await validationService.validateStudentUniqueness(
+        studentForm.student_id, 
+        studentForm.email
+      );
+
+      if (!uniquenessCheck.isValid) {
+        setValidationErrors({ 
+          general: uniquenessCheck.error || 'Student ID or email already exists' 
+        });
+        setLoading(false);
+        setIsValidating(false);
+        return;
+      }
+
+      // Clear any previous validation errors
+      setValidationErrors({});
+      
+      // Proceed with registration
       const response = await authenticatedFetch('/api/developers/test-registration/student', {
         method: 'POST',
         headers: {
@@ -75,30 +110,62 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
         },
         body: JSON.stringify(studentForm),
       });
-      
 
       if (response.ok) {
+        const result = await response.json();
         setCurrentStep('success');
-        onRegistrationSuccess?.('student', studentForm);
+        onRegistrationSuccess?.('student', { ...studentForm, message: result.message });
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Registration failed'}`);
+        setValidationErrors({ 
+          general: error.error || 'Registration failed' 
+        });
       }
     } catch (error) {
       console.error('Student registration error:', error);
-      alert('Registration failed. Please try again.');
+      setValidationErrors({ 
+        general: 'Registration failed. Please try again.' 
+      });
     } finally {
       setLoading(false);
+      setIsValidating(false);
     }
   };
 
 
-  // Admin registration
+
+  // Admin registration with enhanced validation
   const handleAdminSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setIsValidating(true);
     
     try {
+      // First, validate the form data locally
+      const validation = validationService.validateAdminData(adminForm);
+      if (!validation.isValid) {
+        setValidationErrors(validation.errors);
+        setLoading(false);
+        setIsValidating(false);
+        return;
+      }
+
+      // Then validate email uniqueness across tables
+      const uniquenessCheck = await validationService.validateAdminUniqueness(adminForm.email);
+
+      if (!uniquenessCheck.isValid) {
+        setValidationErrors({ 
+          general: uniquenessCheck.error || 'Email already exists' 
+        });
+        setLoading(false);
+        setIsValidating(false);
+        return;
+      }
+
+      // Clear any previous validation errors
+      setValidationErrors({});
+      
+      // Proceed with registration
       const response = await authenticatedFetch('/api/developers/test-registration/admin', {
         method: 'POST',
         headers: {
@@ -106,20 +173,25 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
         },
         body: JSON.stringify(adminForm),
       });
-      
 
       if (response.ok) {
+        const result = await response.json();
         setCurrentStep('success');
-        onRegistrationSuccess?.('admin', adminForm);
+        onRegistrationSuccess?.('admin', { ...adminForm, message: result.message });
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Registration failed'}`);
+        setValidationErrors({ 
+          general: error.error || 'Registration failed' 
+        });
       }
     } catch (error) {
       console.error('Admin registration error:', error);
-      alert('Registration failed. Please try again.');
+      setValidationErrors({ 
+        general: 'Registration failed. Please try again.' 
+      });
     } finally {
       setLoading(false);
+      setIsValidating(false);
     }
   };
 
@@ -170,10 +242,12 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
   return (
     <div className="test-mode-overlay">
       <div className="test-mode-popup">
+
         <div className="popup-header">
           <h2>Test Mode Registration</h2>
           <button className="close-btn" onClick={handleClose}>×</button>
         </div>
+
 
         <div className="popup-content">
           {currentStep === 'role-selection' && (
@@ -181,7 +255,6 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
               <p className="role-description">
                 Welcome! Please select your role for test mode registration.
               </p>
-              
 
               <div className="role-options">
                 <div 
@@ -193,7 +266,7 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                 >
                   <div className="role-icon">👨‍🎓</div>
                   <h3>Student</h3>
-                  <p>Register as a student to test the document request system</p>
+                  <p>Register as a student to test the document request and tracking system</p>
                 </div>
                 
                 <div 
@@ -223,10 +296,29 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
             </div>
           )}
 
+
           {currentStep === 'student-form' && (
             <div className="form-section">
               <h3>Student Registration</h3>
+              
+              <div className="student-form-instructions">
+                <div className="instruction-note">
+                  <div className="note-icon">⚠️</div>
+                  <div className="note-content">
+                    <h4>Important: WhatsApp Requirement</h4>
+                    <p>The OTP code will be sent as a "Reference Number" to your WhatsApp. Make sure you have WhatsApp installed and active on the provided number.</p>
+                  </div>
+                </div>
+              </div>
+              
+
               <form onSubmit={handleStudentSubmit} className="registration-form">
+                {validationErrors.general && (
+                  <div className="validation-error general-error">
+                    ⚠️ {validationErrors.general}
+                  </div>
+                )}
+                
                 <div className="form-group">
                   <label>Student ID *</label>
                   <input
@@ -236,8 +328,12 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                     placeholder="e.g., 2025-1011"
                     required
                   />
+                  {validationErrors.student_id && (
+                    <span className="field-error">{validationErrors.student_id}</span>
+                  )}
                 </div>
                 
+
                 <div className="form-row">
                   <div className="form-group">
                     <label>First Name *</label>
@@ -248,6 +344,9 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                       placeholder="John"
                       required
                     />
+                    {validationErrors.firstname && (
+                      <span className="field-error">{validationErrors.firstname}</span>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Last Name *</label>
@@ -258,6 +357,9 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                       placeholder="Doe"
                       required
                     />
+                    {validationErrors.lastname && (
+                      <span className="field-error">{validationErrors.lastname}</span>
+                    )}
                   </div>
                 </div>
                 
@@ -271,6 +373,9 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                     pattern="639[0-9]{9}"
                     required
                   />
+                  {validationErrors.contact_number && (
+                    <span className="field-error">{validationErrors.contact_number}</span>
+                  )}
                 </div>
                 
                 <div className="form-group">
@@ -282,6 +387,9 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                     placeholder="john.doe@example.com"
                     required
                   />
+                  {validationErrors.email && (
+                    <span className="field-error">{validationErrors.email}</span>
+                  )}
                 </div>
                 
                 <div className="form-group">
@@ -299,6 +407,9 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                     <option value="CON">College of Nursing</option>
                     <option value="COED">College of Education</option>
                   </select>
+                  {validationErrors.college_code && (
+                    <span className="field-error">{validationErrors.college_code}</span>
+                  )}
                 </div>
                 
                 <div className="form-actions">
@@ -318,9 +429,16 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
           )}
 
           {currentStep === 'admin-form' && (
+
             <div className="form-section">
               <h3>Administrator Registration</h3>
               <form onSubmit={handleAdminSubmit} className="registration-form">
+                {validationErrors.general && (
+                  <div className="validation-error general-error">
+                    ⚠️ {validationErrors.general}
+                  </div>
+                )}
+                
                 <div className="form-group">
                   <label>Email *</label>
                   <input
@@ -330,11 +448,13 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                     placeholder="admin@example.com"
                     required
                   />
+                  {validationErrors.email && (
+                    <span className="field-error">{validationErrors.email}</span>
+                  )}
                 </div>
                 
                 <div className="form-group">
                   <label>Role *</label>
-
                   <select
                     value={adminForm.role}
                     onChange={(e) => handleInputChange('admin', 'role', e.target.value)}
@@ -345,6 +465,9 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                     <option value="manager">Manager</option>
                     <option value="admin">Admin</option>
                   </select>
+                  {validationErrors.role && (
+                    <span className="field-error">{validationErrors.role}</span>
+                  )}
                 </div>
                 
                 <div className="admin-info">

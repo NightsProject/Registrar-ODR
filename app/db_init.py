@@ -325,11 +325,28 @@ def ready_open_request_restriction_table():
    """
    execute_query(alter_query)
    
+
    # Add test_mode column if it doesn't exist
    alter_query_test_mode = """
    ALTER TABLE open_request_restriction ADD COLUMN IF NOT EXISTS test_mode BOOLEAN DEFAULT FALSE
    """
    execute_query(alter_query_test_mode)
+   
+   # Add test origin tracking columns if they don't exist
+   alter_query_students = """
+   ALTER TABLE students ADD COLUMN IF NOT EXISTS is_test_origin BOOLEAN DEFAULT FALSE
+   """
+   execute_query(alter_query_students)
+   
+   alter_query_admins = """
+   ALTER TABLE admins ADD COLUMN IF NOT EXISTS is_test_origin BOOLEAN DEFAULT FALSE
+   """
+   execute_query(alter_query_admins)
+   
+   alter_query_feedback = """
+   ALTER TABLE feedback ADD COLUMN IF NOT EXISTS is_test_origin BOOLEAN DEFAULT FALSE
+   """
+   execute_query(alter_query_feedback)
 
 
 def ready_admin_settings_table():
@@ -406,6 +423,7 @@ def ready_available_dates_table():
    """
    execute_query(index_query)
 
+
 def ready_feedback_table():
    """Create table for test mode feedback system."""
    query = """
@@ -417,7 +435,8 @@ def ready_feedback_table():
        description TEXT NOT NULL,
        steps_to_reproduce TEXT,
        submitted_at TIMESTAMP DEFAULT NOW(),
-       status VARCHAR(20) DEFAULT 'NEW' CHECK (status IN ('NEW', 'IN PROGRESS', 'RESOLVED', 'CLOSED'))
+       status VARCHAR(20) DEFAULT 'NEW' CHECK (status IN ('NEW', 'IN PROGRESS', 'RESOLVED', 'CLOSED')),
+       is_test_origin BOOLEAN DEFAULT FALSE
    )
    """
    execute_query(query)
@@ -427,6 +446,37 @@ def ready_feedback_table():
    CREATE INDEX IF NOT EXISTS idx_feedback_submitted_at ON feedback(submitted_at DESC)
    """
    execute_query(index_query)
+
+def ready_test_students_table():
+   """Create test students table for enhanced test mode."""
+   query = """
+   CREATE TABLE IF NOT EXISTS test_students (
+       student_id VARCHAR(20) PRIMARY KEY,
+       full_name VARCHAR(100) NOT NULL,
+       contact_number VARCHAR(20),
+       email VARCHAR(100),
+       liability_status BOOLEAN DEFAULT FALSE,
+       firstname VARCHAR(50) NOT NULL,
+       lastname VARCHAR(50) NOT NULL,
+       college_code VARCHAR(20),
+       created_at TIMESTAMP DEFAULT NOW(),
+       updated_at TIMESTAMP DEFAULT NOW()
+   )
+   """
+   execute_query(query)
+
+def ready_test_admins_table():
+   """Create test admins table for enhanced test mode."""
+   query = """
+   CREATE TABLE IF NOT EXISTS test_admins (
+       email VARCHAR(100) PRIMARY KEY,
+       role VARCHAR(50) NOT NULL,
+       profile_picture VARCHAR(500),
+       created_at TIMESTAMP DEFAULT NOW(),
+       updated_at TIMESTAMP DEFAULT NOW()
+   )
+   """
+   execute_query(query)
 
 
 # ==========================
@@ -690,6 +740,7 @@ def insert_sample_data():
 
 
 
+
 def initialize_db():
    """Initialize database and all tables."""
    create_database()
@@ -713,6 +764,8 @@ def initialize_db():
    ready_changes_table()
    ready_available_dates_table()
    ready_feedback_table()
+   ready_test_students_table()
+   ready_test_admins_table()
    print("Database and tables initialized successfully.")
 
 

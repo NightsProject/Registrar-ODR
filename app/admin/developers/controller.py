@@ -131,22 +131,17 @@ def delete_feedback(feedback_id):
         current_app.logger.error(f"Error deleting feedback: {e}")
         return jsonify({"error": "Failed to delete feedback"}), 500
 
+
 @developers_bp.route("/api/developers/test-registration/student", methods=["POST"])
 def register_student():
-    """Register or update student (for test mode)."""
+    """Register student with dual registration (test + main tables if test mode ON)."""
     data = request.get_json(silent=True) or {}
     
-
     # Required fields
     required_fields = ['student_id', 'firstname', 'lastname', 'contact_number', 'email', 'college_code']
     for field in required_fields:
         if not data.get(field):
             return jsonify({"error": f"{field} is required"}), 400
-    
-    # Check if student ID already exists
-    student_id = data.get('student_id')
-    if TestRegistration.check_student_exists(student_id):
-        return jsonify({"error": "Student ID already exists. Cannot register duplicate student ID."}), 400
     
     # Validate phone number format (639xxxxxxxxx)
     contact_number = data.get('contact_number')
@@ -173,10 +168,16 @@ def register_student():
     
     try:
         if TestRegistration.create_student(student_data):
-            current_app.logger.info(f"Student {data.get('student_id')} registered/updated")
-            return jsonify({"message": "Student registered successfully"}), 201
+            # Get current test mode state for response
+            test_mode = TestModeSettings.get_test_mode()
+            message = f"Student registered successfully ({'test mode ON - registered in both tables' if test_mode else 'test mode OFF - registered in test table only'})"
+            current_app.logger.info(f"Student {data.get('student_id')} registered - {message}")
+            return jsonify({"message": message}), 201
         else:
             return jsonify({"error": "Failed to register student"}), 500
+    except ValueError as ve:
+        current_app.logger.warning(f"Validation error registering student: {ve}")
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         current_app.logger.error(f"Error registering student: {e}")
         return jsonify({"error": "Failed to register student"}), 500
@@ -197,16 +198,16 @@ def get_student(student_id):
         current_app.logger.error(f"Error fetching student: {e}")
         return jsonify({"error": "Failed to fetch student"}), 500
 
+
 @developers_bp.route("/api/developers/test-registration/admin", methods=["POST"])
 def register_admin():
-    """Register or update admin (for test mode)."""
+    """Register admin with dual registration (test + main tables if test mode ON)."""
     data = request.get_json(silent=True) or {}
     
     # Required fields
     if not data.get('email') or not data.get('role'):
         return jsonify({"error": "Email and role are required"}), 400
     
-
     # Validate role
     valid_roles = ['admin', 'manager', 'auditor', 'staff']
     role = data.get('role')
@@ -221,18 +222,26 @@ def register_admin():
     
     admin_data = {
         'email': email,
-        'role': role
+        'role': role,
+        'profile_picture': data.get('profile_picture', '')
     }
     
     try:
         if TestRegistration.create_admin(admin_data):
-            current_app.logger.info(f"Admin {email} registered/updated with role {role}")
-            return jsonify({"message": "Admin registered successfully"}), 201
+            # Get current test mode state for response
+            test_mode = TestModeSettings.get_test_mode()
+            message = f"Admin registered successfully ({'test mode ON - registered in both tables' if test_mode else 'test mode OFF - registered in test table only'})"
+            current_app.logger.info(f"Admin {email} registered - {message}")
+            return jsonify({"message": message}), 201
         else:
             return jsonify({"error": "Failed to register admin"}), 500
+    except ValueError as ve:
+        current_app.logger.warning(f"Validation error registering admin: {ve}")
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         current_app.logger.error(f"Error registering admin: {e}")
         return jsonify({"error": "Failed to register admin"}), 500
+
 
 
 @developers_bp.route("/api/developers/test-registration/admin/<email>", methods=["GET"])
@@ -249,4 +258,57 @@ def get_admin(email):
     except Exception as e:
         current_app.logger.error(f"Error fetching admin: {e}")
         return jsonify({"error": "Failed to fetch admin"}), 500
+
+@developers_bp.route("/api/developers/test-registration/validate/student", methods=["POST"])
+def validate_student_uniqueness():
+    """Validate student ID and email uniqueness across relevant tables."""
+    data = request.get_json(silent=True) or {}
+    student_id = data.get('student_id')
+    email = data.get('email')
+    
+    if not student_id or not email:
+        return jsonify({"error": "Student ID and email are required"}), 400
+    
+    try:
+        # Check student ID uniqueness
+        student_id_valid = TestModeSettings.validate_student_id_uniqueness(student_id)
+        if not student_id_valid:
+            return jsonify({
+                "isValid": False,
+                "error": "Student ID already exists in students or test_students tables"
+            }), 400
+        
+        return jsonify({
+            "isValid": True,
+            "message": "Student ID are unique"
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"Error validating student uniqueness: {e}")
+        return jsonify({"error": "Failed to validate uniqueness"}), 500
+
+@developers_bp.route("/api/developers/test-registration/validate/admin", methods=["POST"])
+def validate_admin_uniqueness():
+    """Validate email uniqueness across all tables for admin registration."""
+    data = request.get_json(silent=True) or {}
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+    
+    try:
+        # Check email uniqueness across all tables
+        email_valid = TestModeSettings.validate_email_uniqueness(email)
+        if not email_valid:
+            return jsonify({
+                "isValid": False,
+                "error": "Email already exists in students, test_students, admins, or test_admins tables"
+            }), 400
+        
+        return jsonify({
+            "isValid": True,
+            "message": "Email is unique"
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"Error validating admin uniqueness: {e}")
+        return jsonify({"error": "Failed to validate uniqueness"}), 500
 

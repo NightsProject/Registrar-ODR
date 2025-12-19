@@ -161,7 +161,8 @@ export const feedbackService = {
   },
 };
 
-// Validation utilities
+
+//  Validation utilities for cross-table uniqueness
 export const validationService = {
   validateStudentData: (data) => {
     const errors = {};
@@ -221,7 +222,7 @@ export const validationService = {
     if (!data.role || data.role.trim() === '') {
       errors.role = 'Role is required';
     } else {
-      const validRoles = ['admin', 'manager', 'auditor', 'staff', 'developer'];
+      const validRoles = ['admin', 'manager', 'auditor', 'staff'];
       if (!validRoles.includes(data.role)) {
         errors.role = 'Invalid role selected';
       }
@@ -272,6 +273,67 @@ export const validationService = {
       isValid: Object.keys(errors).length === 0,
       errors,
     };
+  },
+
+  // validation with cross-table uniqueness checking
+  validateStudentUniqueness: async (studentId, email) => {
+    try {
+      // Check student ID uniqueness (students + test_students tables)
+      const studentResponse = await authenticatedFetch('/api/developers/test-registration/validate/student', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ student_id: studentId, email: email }),
+      });
+      
+      if (!studentResponse.ok) {
+        const error = await studentResponse.json();
+        return {
+          isValid: false,
+          error: error.error || 'Failed to validate student uniqueness'
+        };
+      }
+      
+      const result = await studentResponse.json();
+      return result;
+    } catch (error) {
+      console.error('Error validating student uniqueness:', error);
+      return {
+        isValid: false,
+        error: 'Network error during validation'
+      };
+    }
+  },
+
+  validateAdminUniqueness: async (email) => {
+    try {
+      // Check email uniqueness across all tables
+      const adminResponse = await authenticatedFetch('/api/developers/test-registration/validate/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email }),
+      });
+      
+      if (!adminResponse.ok) {
+        const error = await adminResponse.json();
+        return {
+          isValid: false,
+          error: error.error || 'Failed to validate admin uniqueness'
+        };
+      }
+      
+      const result = await adminResponse.json();
+      return result;
+    } catch (error) {
+      console.error('Error validating admin uniqueness:', error);
+      return {
+        isValid: false,
+        error: 'Network error during validation'
+      };
+    }
   },
 };
 

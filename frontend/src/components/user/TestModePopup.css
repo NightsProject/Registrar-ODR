@@ -81,11 +81,90 @@
   text-align: center;
 }
 
+
 .role-description {
   color: #6b7280;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   font-size: 1rem;
   line-height: 1.5;
+}
+
+/* Test Mode Instructions */
+.test-mode-instructions {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.instruction-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.instruction-card:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.instruction-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.instruction-card h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.instruction-card p {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Student Form Instructions */
+.student-form-instructions {
+  margin-bottom: 20px;
+}
+
+.instruction-note {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.note-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.note-content h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #991b1b;
+  margin: 0 0 6px 0;
+}
+
+.note-content p {
+  font-size: 0.8rem;
+  color: #7f1d1d;
+  margin: 0;
+  line-height: 1.4;
 }
 
 .role-options {
@@ -292,6 +371,7 @@
   margin-bottom: 20px;
 }
 
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .test-mode-popup {
@@ -310,6 +390,44 @@
 
   .role-options {
     grid-template-columns: 1fr;
+  }
+
+  .test-mode-instructions {
+    gap: 10px;
+  }
+
+  .instruction-card {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .instruction-icon {
+    font-size: 1.25rem;
+  }
+
+  .instruction-card h4 {
+    font-size: 0.8rem;
+  }
+
+  .instruction-card p {
+    font-size: 0.7rem;
+  }
+
+  .instruction-note {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .note-icon {
+    font-size: 1.1rem;
+  }
+
+  .note-content h4 {
+    font-size: 0.8rem;
+  }
+
+  .note-content p {
+    font-size: 0.75rem;
   }
 
   .form-row {
