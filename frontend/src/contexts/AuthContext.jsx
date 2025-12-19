@@ -1,7 +1,9 @@
 
 
+
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { normalizeRole } from '../utils/roleUtils';
+import { normalizeRole, hasPermission as checkPermission, canAccessRoute as checkRouteAccess, getFilteredNavigationItems as checkFilteredItems } from '../utils/roleUtils';
 import { getCSRFToken } from '../utils/csrf';
 
 const AuthContext = createContext();
@@ -119,29 +121,16 @@ export const AuthProvider = ({ children }) => {
   };
 
 
+
   /**
    * Check if user has specific permission
    * @param {string} permission - Permission to check
    * @returns {boolean} - True if user has permission
    */
   const hasPermission = (permission) => {
-    if (!role || !permission) return false;
-    
-
-
-
-
-    const rolePermissions = {
-      developer: ['dashboard', 'requests', 'transactions', 'documents', 'logs', 'settings', 'developers'],
-      admin: ['dashboard', 'requests', 'transactions', 'documents', 'logs', 'settings'],
-      manager: ['dashboard', 'requests', 'documents', 'logs'],
-      auditor: ['dashboard', 'transactions', 'view_request_details'],
-      staff: ['dashboard', 'requests'],
-      none: [],
-    };
-    
-    return rolePermissions[role]?.includes(permission) || false;
+    return checkPermission(role, permission);
   };
+
 
   /**
    * Check if user can access specific route
@@ -149,22 +138,10 @@ export const AuthProvider = ({ children }) => {
    * @returns {boolean} - True if user can access route
    */
   const canAccessRoute = (path) => {
-    if (!role || !path) return false;
-    
-
-    const routePermissions = {
-      '/admin/dashboard': 'dashboard',
-      '/admin/requests': 'requests',
-      '/admin/transactions': 'transactions',
-      '/admin/document': 'documents',
-      '/admin/logs': 'logs',
-      '/admin/settings': 'settings',
-      '/admin/developers': 'developers',
-    };
-    
-    const permission = routePermissions[path];
-    return permission ? hasPermission(permission) : true;
+    return checkRouteAccess(role, path);
   };
+
+
 
   /**
    * Get filtered navigation items based on user role
@@ -173,18 +150,8 @@ export const AuthProvider = ({ children }) => {
   const getFilteredNavigationItems = () => {
     if (!role) return [];
     
-
-    const navigationItems = [
-      { name: 'Dashboard', path: '/admin/dashboard', permission: 'dashboard' },
-      { name: 'Requests', path: '/admin/requests', permission: 'requests' },
-      { name: 'Transactions', path: '/admin/transactions', permission: 'transactions' },
-      { name: 'Documents', path: '/admin/document', permission: 'documents' },
-      { name: 'Logs', path: '/admin/logs', permission: 'logs' },
-      { name: 'Settings', path: '/admin/settings', permission: 'settings' },
-      { name: 'Developers', path: '/admin/developers', permission: 'developers' }
-    ];
-    
-    return navigationItems.filter(item => hasPermission(item.permission));
+    // Use the centralized function from roleUtils
+    return checkFilteredItems(role);
   };
 
 

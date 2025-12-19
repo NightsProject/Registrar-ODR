@@ -1,10 +1,9 @@
+
 // Role-based access control utilities
-
-
-
 
 /**
  * Define role permissions for navigation items
+ * This is the single source of truth for all role permissions
  */
 export const ROLE_PERMISSIONS = {
   admin: {
@@ -14,25 +13,8 @@ export const ROLE_PERMISSIONS = {
     documents: true,
     logs: true,
     settings: true,
-    developers: false,  
-  },
-  manager: {
-    dashboard: true,
-    requests: true,
-    transactions: false,
-    documents: true,
-    logs: false,
-    settings: false,
-    developers: false,
-  },
-  staff: {
-    dashboard: true,
-    requests: true,
-    transactions: false,
-    documents: false,
-    logs: false,
-    settings: false,
-    developers: false,
+    developers: true,  
+    view_request_details: true,
   },
   developer: {
     dashboard: true,
@@ -42,6 +24,37 @@ export const ROLE_PERMISSIONS = {
     logs: true,
     settings: true,
     developers: true,  
+    view_request_details: true,
+  },
+  manager: {
+    dashboard: true,
+    requests: true,
+    transactions: true,
+    documents: true,
+    logs: true,
+    settings: false,
+    developers: false,
+    view_request_details: true,
+  },
+  auditor: {
+    dashboard: true,
+    requests: false,
+    transactions: true,
+    documents: false,
+    logs: true,
+    settings: false,
+    developers: false,
+    view_request_details: true,
+  },
+  staff: {
+    dashboard: true,
+    requests: true,
+    transactions: false,
+    documents: false,
+    logs: false,
+    settings: false,
+    developers: false,
+    view_request_details: true,
   },
   none: {
     dashboard: false,
@@ -51,12 +64,15 @@ export const ROLE_PERMISSIONS = {
     logs: false,
     settings: false,
     developers: false,
+    view_request_details: false,
   },
 };
 
 
+
 /**
  * Define navigation items with their corresponding permission keys
+ * This includes icon information for the Sidebar component
  */
 export const NAVIGATION_ITEMS = [
   { name: 'Dashboard', path: '/admin/dashboard', permission: 'dashboard', icon: 'DashboardIcon' },
@@ -83,6 +99,7 @@ export const hasPermission = (role, permission) => {
   return rolePermissions[permission] || false;
 };
 
+
 /**
  * Get navigation items filtered by user role
  * @param {string} role - User's role
@@ -93,6 +110,7 @@ export const getFilteredNavigationItems = (role) => {
   
   return NAVIGATION_ITEMS.filter(item => hasPermission(role, item.permission));
 };
+
 
 /**
  * Check if user can access a specific route

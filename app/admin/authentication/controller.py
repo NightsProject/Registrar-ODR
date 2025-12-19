@@ -68,10 +68,7 @@ def google_oauth_callback():
             return redirect(frontend_error_url)
 
         token = google.authorize_access_token()
-        user_info = google.parse_id_token(token, nonce=nonce)  # pass nonce here
-
-
-    
+        user_info = google.parse_id_token(token, nonce=nonce)  # pass nonce here 
         profile_picture = user_info['picture']
         email = user_info.get("email")
         hd = user_info.get("hd")
@@ -82,7 +79,7 @@ def google_oauth_callback():
 
         admin = Admin.get_by_email(email)
         if not admin:
-            Admin.add(email, "none")
+            Admin.add(email, "none", profile_picture)
             frontend_waiting_url = f"{FRONTEND_URL}/admin/waiting"
             return redirect(frontend_waiting_url)
         if admin["role"] == "none":

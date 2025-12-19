@@ -75,10 +75,13 @@ const ProtectedRoute = ({
  * @returns {string} - First accessible path
  */
 const getFirstAccessiblePath = (role) => {
+
   const rolePaths = {
     admin: '/admin/dashboard',
     manager: '/admin/dashboard',
+    developer: '/admin/dashboard',
     staff: '/admin/dashboard',
+    auditor: '/admin/dashboard',
     none: '/admin/waiting',
   };
 
@@ -91,6 +94,7 @@ const getFirstAccessiblePath = (role) => {
  * @returns {string} - Corresponding path
  */
 const getPathForPermission = (permission) => {
+
   const permissionPaths = {
     dashboard: '/admin/dashboard',
     requests: '/admin/requests',
@@ -98,6 +102,7 @@ const getPathForPermission = (permission) => {
     documents: '/admin/document',
     logs: '/admin/logs',
     settings: '/admin/settings',
+    developers: '/admin/developers',
   };
 
   return permissionPaths[permission] || '/admin/dashboard';

@@ -14,8 +14,10 @@ import Documents from "./pages/admin/Documents/Documents";
 import Requests from "./pages/admin/manage_request/Requests";
 import AssignRequests from "./pages/admin/manage_request/AssignRequests";
 import Logs from "./pages/admin/Logs";
+
 import Transactions from "./pages/admin/transactions/Transactions";
 import Settings from "./pages/admin/Settings";
+import Developers from "./pages/admin/Developers";
 import RequestFlow from "./pages/user/request/RequestFlow";
 import RequestViewPage_Flow from "./pages/admin/manage_request/RequestViewPage_Flow";
 import ProtectedRoute, { AccessDenied } from "./components/admin/ProtectedRoute";
@@ -102,10 +104,18 @@ function App() {
               </ProtectedRoute>
             } />
             
+
             {/* Settings - Admin only */}
             <Route path="settings" element={
               <ProtectedRoute requiredPermissions={['settings']}>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            
+            {/* Developers - Developer role only */}
+            <Route path="developers" element={
+              <ProtectedRoute requiredPermissions={['developers']}>
+                <Developers />
               </ProtectedRoute>
             } />
           </Route>
