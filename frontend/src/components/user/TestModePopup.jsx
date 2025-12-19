@@ -244,7 +244,7 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
       <div className="test-mode-popup">
 
         <div className="popup-header">
-          <h2>Test Mode Registration</h2>
+          <h2>Test Mode turned ON</h2>
           <button className="close-btn" onClick={handleClose}>×</button>
         </div>
 
@@ -253,7 +253,7 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
           {currentStep === 'role-selection' && (
             <div className="role-selection">
               <p className="role-description">
-                Welcome! Please select your role for test mode registration.
+                Welcome! Please select your role for registration.
               </p>
 
               <div className="role-options">
@@ -471,7 +471,7 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                 </div>
                 
                 <div className="admin-info">
-                  <p><strong>Note:</strong> This is for test mode only. For production access, contact the system administrator.</p>
+                  <p><strong>Note:</strong> For Admin Login, https://registrar-odr.onrender.com/admin/login</p>
                 </div>
                 
                 <div className="form-actions">
