@@ -342,12 +342,6 @@ def ready_open_request_restriction_table():
    ALTER TABLE admins ADD COLUMN IF NOT EXISTS is_test_origin BOOLEAN DEFAULT FALSE
    """
    execute_query(alter_query_admins)
-   
-   alter_query_feedback = """
-   ALTER TABLE feedback ADD COLUMN IF NOT EXISTS is_test_origin BOOLEAN DEFAULT FALSE
-   """
-   execute_query(alter_query_feedback)
-
 
 def ready_admin_settings_table():
    query = """
@@ -436,7 +430,6 @@ def ready_feedback_table():
        steps_to_reproduce TEXT,
        submitted_at TIMESTAMP DEFAULT NOW(),
        status VARCHAR(20) DEFAULT 'NEW' CHECK (status IN ('NEW', 'IN PROGRESS', 'RESOLVED', 'CLOSED')),
-       is_test_origin BOOLEAN DEFAULT FALSE
    )
    """
    execute_query(query)

@@ -100,13 +100,6 @@ class TestModeSettings:
                     is_test_origin = TRUE
             """)
             
-            # Transfer feedback if any (mark as test origin)
-            cur.execute("""
-                UPDATE feedback 
-                SET is_test_origin = TRUE
-                WHERE is_test_origin = FALSE
-            """)
-            
             return True
         except Exception as e:
             print(f"Error transferring test data: {e}")
@@ -125,10 +118,7 @@ class TestModeSettings:
             
             # Delete test-originated admins
             cur.execute("DELETE FROM admins WHERE is_test_origin = TRUE")
-            
-            # Update feedback to remove test origin marking (but keep feedback)
-            cur.execute("UPDATE feedback SET is_test_origin = FALSE")
-            
+        
             return True
         except Exception as e:
             print(f"Error cleaning up test origin data: {e}")
@@ -191,7 +181,7 @@ class Feedback:
             test_mode = TestModeSettings.get_test_mode()
             
             cur.execute("""
-                INSERT INTO feedback (name, email, feedback_type, description, steps_to_reproduce, is_test_origin)
+                INSERT INTO feedback (name, email, feedback_type, description, steps_to_reproduce)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING feedback_id
             """, (name, email, feedback_type, description, steps_to_reproduce, test_mode))
