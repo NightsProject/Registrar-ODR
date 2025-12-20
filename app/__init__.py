@@ -13,6 +13,7 @@ from flask_session import Session
 from datetime import timedelta
 from dotenv import load_dotenv
 from app.db_init import initialize_db
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 db_pool = None
 
@@ -31,6 +32,7 @@ def create_app(test_config=None):
     #in development
     app = Flask(__name__, static_folder="../frontend/build/static", template_folder="../frontend/build")
     
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)    
     
     # =====================
     #  CONFIG
