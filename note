@@ -131,8 +131,10 @@ manage request
     
     for the frontend- like the dashboard when loading(its nice)
 
+    in view documents - back button
+
 
     bobeth - request, request managment, settings, logs, developers tab, project directory structure, test mode
     karol - tracking, transaction management, maya payment gateway api, settings,
     ajman - WhatsApp api, dashboard, admin auth, admin master layout, 
-    kin - user auth, user master layout, Ui/Ux Enhancments(majority)
+    kin - user auth, user master layout, Ui/Ux Enhancments(majority), document manage, requirement manage
