@@ -346,7 +346,7 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
                       
                       <div className="guide-steps">
                         <div className="guide-step">
-                          <h5>1. Student Registration</h5>
+                          <h5>1. Student Registration (FOR TESTING)</h5>
                           <p><strong>What:</strong> Create your student account in the system</p>
                           <p><strong>How:</strong> Fill out the registration form with your student ID, personal details, and college information</p>
                           <p><strong>Important:</strong> Ensure your WhatsApp number is active for OTP verification</p>

@@ -75,11 +75,11 @@ manage request
 
     fee management - LBC orders, datacenter fee
 
-    edit reason in the manage date - you can update the reason via manually inputing the date in it
+    edit reason in the manage date - you can update the reason via manually inputing the date in it  --- this is working already
 
     optimize documents management query
 
-    load this day view for the assignments
+    load current day view for the assignments 
 
     the availability would be based on the server time so when deployed in render its not philippines time
 
