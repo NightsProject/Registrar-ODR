@@ -101,3 +101,17 @@ manage request
 
     integrate refresh components -socket
 
+    add step by step progress bar in the tracking page
+
+    the requester can include a notes to thier request - remarks
+
+    send to email for complete request breakdown
+
+    View comprehensive tracking information including status, costs, documents
+
+    add others in request changes
+
+    LBC Delivery: Provide complete delivery address and contact details (X)
+
+    For LBC delivery, confirm shipping address and pay delivery fee (X) - should implement delivery fee managment in settings
+                          
