@@ -115,3 +115,24 @@ manage request
 
     For LBC delivery, confirm shipping address and pay delivery fee (X) - should implement delivery fee managment in settings
                           
+    in test mode on I cant see the account manager, auditor and staff in settings admin management - maybe naming case sensitivity??
+
+    update log - history
+
+    version indicator
+
+    about me and credits and developers
+
+    navigation buttons - tracking, request
+
+    add payment required indicator to a document- in view documents in landing page and document list in request flow
+
+    mobile view
+    
+    for the frontend- like the dashboard when loading(its nice)
+
+
+    bobeth - request, request managment, settings, logs, developers tab, project directory structure, test mode
+    karol - tracking, transaction management, maya payment gateway api, settings,
+    ajman - WhatsApp api, dashboard, admin auth, admin master layout, 
+    kin - user auth, user master layout, Ui/Ux Enhancments(majority)
