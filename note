@@ -134,7 +134,7 @@ manage request
     in view documents - back button
 
 
-    bobeth - request, request managment, settings, logs, developers tab, project directory structure, test mode
+    bobeth - request, request managment, settings, logs, developers tab, project directory structure, test mode, roles(authContext)
     karol - tracking, transaction management, maya payment gateway api, settings,
     ajman - WhatsApp api, dashboard, admin auth, admin master layout, 
     kin - user auth, user master layout, Ui/Ux Enhancments(majority), document manage, requirement manage
