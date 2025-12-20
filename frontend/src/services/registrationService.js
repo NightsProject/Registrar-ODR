@@ -304,36 +304,5 @@ export const validationService = {
         error: 'Network error during validation'
       };
     }
-  },
-
-  validateAdminUniqueness: async (email) => {
-    try {
-      // Check email uniqueness across all tables
-      const adminResponse = await authenticatedFetch('/api/developers/test-registration/validate/admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email }),
-      });
-      
-      if (!adminResponse.ok) {
-        const error = await adminResponse.json();
-        return {
-          isValid: false,
-          error: error.error || 'Failed to validate admin uniqueness'
-        };
-      }
-      
-      const result = await adminResponse.json();
-      return result;
-    } catch (error) {
-      console.error('Error validating admin uniqueness:', error);
-      return {
-        isValid: false,
-        error: 'Network error during validation'
-      };
-    }
-  },
-};
-
+  }
+}

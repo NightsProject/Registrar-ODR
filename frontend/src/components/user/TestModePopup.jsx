@@ -152,18 +152,6 @@ const TestModePopup = ({ isOpen, onClose, onRegistrationSuccess }) => {
         return;
       }
 
-      // Then validate email uniqueness across tables
-      const uniquenessCheck = await validationService.validateAdminUniqueness(adminForm.email);
-
-      if (!uniquenessCheck.isValid) {
-        setValidationErrors({ 
-          general: uniquenessCheck.error || 'Email already exists' 
-        });
-        setLoading(false);
-        setIsValidating(false);
-        return;
-      }
-
       // Clear any previous validation errors
       setValidationErrors({});
       

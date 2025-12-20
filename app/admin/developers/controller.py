@@ -284,29 +284,3 @@ def validate_student_uniqueness():
         current_app.logger.error(f"Error validating student uniqueness: {e}")
         return jsonify({"error": "Failed to validate uniqueness"}), 500
 
-@developers_bp.route("/api/developers/test-registration/validate/admin", methods=["POST"])
-def validate_admin_uniqueness():
-    """Validate email uniqueness across all tables for admin registration."""
-    data = request.get_json(silent=True) or {}
-    email = data.get('email')
-    
-    if not email:
-        return jsonify({"error": "Email is required"}), 400
-    
-    try:
-        # Check email uniqueness across all tables
-        email_valid = TestModeSettings.validate_email_uniqueness(email)
-        if not email_valid:
-            return jsonify({
-                "isValid": False,
-                "error": "Email already exists in students, test_students, admins, or test_admins tables"
-            }), 400
-        
-        return jsonify({
-            "isValid": True,
-            "message": "Email is unique"
-        }), 200
-    except Exception as e:
-        current_app.logger.error(f"Error validating admin uniqueness: {e}")
-        return jsonify({"error": "Failed to validate uniqueness"}), 500
-
