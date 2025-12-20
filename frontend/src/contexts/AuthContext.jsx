@@ -1,7 +1,3 @@
-
-
-
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { normalizeRole, hasPermission as checkPermission, canAccessRoute as checkRouteAccess, getFilteredNavigationItems as checkFilteredItems } from '../utils/roleUtils';
 import { getCSRFToken } from '../utils/csrf';

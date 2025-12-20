@@ -13,7 +13,7 @@ export const ROLE_PERMISSIONS = {
     documents: true,
     logs: true,
     settings: true,
-    developers: true,  
+    developers: false,  
     view_request_details: true,
   },
   developer: {
@@ -29,7 +29,7 @@ export const ROLE_PERMISSIONS = {
   manager: {
     dashboard: true,
     requests: true,
-    transactions: true,
+    transactions: false,
     documents: true,
     logs: true,
     settings: false,
@@ -41,7 +41,7 @@ export const ROLE_PERMISSIONS = {
     requests: false,
     transactions: true,
     documents: false,
-    logs: true,
+    logs: false,
     settings: false,
     developers: false,
     view_request_details: true,
