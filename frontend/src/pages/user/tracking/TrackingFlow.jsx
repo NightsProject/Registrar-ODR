@@ -256,7 +256,7 @@ function TrackFlow() {
                             try {
                                 console.log("[MAYA][BROWSER] Trying to mark paid via backend");
                                 console.log("Payment Reference Number:", payment.checkoutId);
-                                const resp = await fetch('/user/payment/mark-paid', {
+                                const resp = await fetch('/api/mark-paid', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
