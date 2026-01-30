@@ -36,7 +36,7 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
      try {
        setLoading(true);
        const csrfToken = getCSRFToken();
-       const res = await fetch("/admin/get-requirements", {
+       const res = await fetch("/api/get-requirements", {
          method: 'GET',
          headers: {
            'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  const handleSaveNewRequirement = async (name) => {
    try {
      const csrfToken = getCSRFToken();
-     const res = await fetch("/admin/add-requirement", {
+     const res = await fetch("/api/add-requirement", {
        method: "POST",
        headers: { 
          "Content-Type": "application/json",
@@ -125,7 +125,7 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
 
    try {
      const csrfToken = getCSRFToken();
-     const res = await fetch(`/admin/delete-requirement/${deleteId}`, { 
+     const res = await fetch(`/api/delete-requirement/${deleteId}`, { 
        method: "DELETE",
        headers: {
          'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  const checkRequirement = async (req_id) => {
    try {
      const csrfToken = getCSRFToken();
-     const res = await fetch(`/admin/check-req/${req_id}`, {
+     const res = await fetch(`/api/check-req/${req_id}`, {
        method: 'GET',
        headers: {
          'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  const checkRequirementExists = async (req_id) => {
  try {
    const csrfToken = getCSRFToken();
-   const res = await fetch(`/admin/check-req-exist/${req_id}`, {
+   const res = await fetch(`/api/check-req-exist/${req_id}`, {
      method: 'GET',
      headers: {
        'Content-Type': 'application/json',
@@ -211,7 +211,7 @@ function RequirementsPopup({ onClose, selected = [], setSelected, onAddRequireme
  const handleSaveEdit = async (req_id, newName) => {
    try {
      const csrfToken = getCSRFToken();
-     const res = await fetch(`/admin/edit-requirement/${req_id}`, {
+     const res = await fetch(`/api/edit-requirement/${req_id}`, {
        method: "PUT",
        headers: { 
          "Content-Type": "application/json",

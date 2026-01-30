@@ -87,9 +87,24 @@ def google_oauth_callback():
 
         admin = Admin.get_by_email(email)
         if not admin:
-            Admin.add(email, "none", profile_picture)
-            frontend_waiting_url = f"{FRONTEND_URL}/admin/waiting"
-            return redirect(frontend_waiting_url)
+            # If database is empty for admins, first account becomes admin automatically
+            admin_count = Admin.count()
+            role = "admin" if admin_count == 0 else "none"
+            Admin.add(email, role, profile_picture)
+            
+            if role == "admin":
+                LoggingService.log_user_management("first_admin_created", email, f"First admin account automatically created")
+                access_token = create_access_token(
+                    identity=email,
+                    additional_claims={"role": role}
+                )
+                frontend_success_url = f"{FRONTEND_URL}/admin/login?oauth=success&first_admin=true"
+                response = redirect(frontend_success_url)
+                set_access_cookies(response, access_token)
+                return response
+            else:
+                frontend_waiting_url = f"{FRONTEND_URL}/admin/waiting"
+                return redirect(frontend_waiting_url)
         if admin["role"] == "none":
             frontend_waiting_url = f"{FRONTEND_URL}/admin/waiting"
             return redirect(frontend_waiting_url)

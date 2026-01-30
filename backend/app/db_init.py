@@ -5,39 +5,6 @@ from dotenv import load_dotenv
 import datetime
 
 
-
-
-def create_database():
-   """Connects to the default 'postgres' DB and creates DB_NAME if it doesn't exist."""
-   load_dotenv('.env')
-   conn = psycopg2.connect(
-       dbname=DB_NAME,  # connect to default DB first
-       user=DB_USERNAME,
-       password=DB_PASSWORD,
-       host=DB_HOST,
-       port=DB_PORT
-   )
-   conn.autocommit = True
-   cur = conn.cursor()
-
-
-   cur.execute("SELECT 1 FROM pg_database WHERE datname=%s", (DB_NAME,))
-   exists = cur.fetchone()
-
-
-   if not exists:
-       cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(DB_NAME)))
-       print(f"Database '{DB_NAME}' created.")
-   else:
-       print(f"Database '{DB_NAME}' already exists.")
-
-
-   cur.close()
-   conn.close()
-
-
-
-
 def get_connection():
    """Connect to the target database."""
    return psycopg2.connect(
@@ -47,8 +14,6 @@ def get_connection():
        host=DB_HOST,
        port=DB_PORT
    )
-
-
 
 
 def execute_query(query, params=None):
@@ -470,32 +435,24 @@ def ready_test_admins_table():
    execute_query(query)
 
 def ready_domain_whitelist_table():
-   """Create domain whitelist table for admin authentication."""
-   query = """
-   CREATE TABLE IF NOT EXISTS domain_whitelist (
-       id SERIAL PRIMARY KEY,
-       domain VARCHAR(255) NOT NULL UNIQUE,
-       description VARCHAR(500),
-       is_active BOOLEAN DEFAULT TRUE,
-       created_at TIMESTAMP DEFAULT NOW(),
-       updated_at TIMESTAMP DEFAULT NOW()
-   )
-   """
-   execute_query(query)
-   
-   # Create index for fast domain lookups
-   index_query = """
-   CREATE INDEX IF NOT EXISTS idx_domain_whitelist_domain ON domain_whitelist(domain)
-   """
-   execute_query(index_query)
-   
-   # Create index for active domains
-   active_index_query = """
-   CREATE INDEX IF NOT EXISTS idx_domain_whitelist_active ON domain_whitelist(is_active)
-   """
-   execute_query(active_index_query)
-
-
+    """Create domain whitelist table for admin authentication."""
+    # 1. Create Table
+    query = """
+    CREATE TABLE IF NOT EXISTS domain_whitelist (
+        id SERIAL PRIMARY KEY,
+        domain VARCHAR(255) NOT NULL UNIQUE,
+        description VARCHAR(500),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    );
+    """
+    execute_query(query)
+    
+    # 2. Create Indexes
+    execute_query("CREATE INDEX IF NOT EXISTS idx_domain_whitelist_domain ON domain_whitelist(domain);")
+    execute_query("CREATE INDEX IF NOT EXISTS idx_domain_whitelist_active ON domain_whitelist(is_active);")
+  
 # ==========================
 # INDEXES FOR PERFORMANCE
 # ==========================
@@ -580,20 +537,6 @@ def populate_independent_tables():
    conn = get_connection()
    cur = conn.cursor()
    try:
-       # Students data
-       student_values = [
-           ("2025-1011", "Nights Project", "639518876143", "nightnightproject@gmail.com", False, "Nights", "Project", "CCS")
-       ]
-       extras.execute_values(
-           cur,
-           """
-           INSERT INTO students (student_id, full_name, contact_number, email, liability_status, firstname, lastname, college_code)
-           VALUES %s
-           ON CONFLICT (student_id) DO NOTHING
-           """,
-           student_values
-       )
-
 
        # Requirements data
        req_values = [
@@ -699,13 +642,9 @@ def populate_independent_tables():
            VALUES (%s, %s, %s)
            ON CONFLICT (domain) DO NOTHING
            """,
-           ('g.msuiit.edu.ph', 'Default domain for MSUIIT administration', True)
+           ('gmail.com', 'Default allowed domain', True)
        )
 
-
-
-
-    
 
        conn.commit()
        print("Independent tables populated successfully.")
@@ -772,7 +711,6 @@ def insert_sample_data():
 
 def initialize_db():
    """Initialize database and all tables."""
-   create_database()
    ready_students_table()
    ready_requirements_table()
    ready_documents_table()
@@ -788,7 +726,7 @@ def initialize_db():
    ready_admin_settings_table()
    ready_open_request_restriction_table()
    ready_fee_table()
-   #insert_sample_data()
+   insert_sample_data()
    ready_others_docs_table()
    ready_changes_table()
    ready_available_dates_table()

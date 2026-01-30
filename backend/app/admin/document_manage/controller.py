@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required
 from .models import DocumentManagementModel
 
 
-@document_management_bp.route('/get-documents', methods=['GET'])
+@document_management_bp.route('/api/get-documents', methods=['GET'])
 @jwt_required()
 def get_documents():
     try:
@@ -14,7 +14,7 @@ def get_documents():
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/get-document-requirements', methods=['GET'])
+@document_management_bp.route('/api/get-document-requirements', methods=['GET'])
 @jwt_required()
 def get_document_requirements():
     try:
@@ -24,7 +24,7 @@ def get_document_requirements():
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/get-document-requirements/<string:doc_id>', methods=['GET'])
+@document_management_bp.route('/api/get-document-requirements/<string:doc_id>', methods=['GET'])
 @jwt_required()
 def get_document_requirements_by_id(doc_id):
     try:
@@ -34,7 +34,7 @@ def get_document_requirements_by_id(doc_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/get-documents-with-requirements', methods=['GET'])
+@document_management_bp.route('/api/get-documents-with-requirements', methods=['GET'])
 @jwt_required()
 def get_documents_with_requirements():
     try:
@@ -44,7 +44,7 @@ def get_documents_with_requirements():
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/add-documents', methods=['POST'])
+@document_management_bp.route('/api/add-documents', methods=['POST'])
 @jwt_required()
 def add_document():
     try:
@@ -63,7 +63,7 @@ def add_document():
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/edit-document/<string:doc_id>', methods=['PUT'])
+@document_management_bp.route('/api/edit-document/<string:doc_id>', methods=['PUT'])
 @jwt_required()
 def edit_document(doc_id):
     try:
@@ -78,7 +78,7 @@ def edit_document(doc_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/delete-document/<string:doc_id>', methods=['DELETE'])
+@document_management_bp.route('/api/delete-document/<string:doc_id>', methods=['DELETE'])
 @jwt_required()
 def delete_document(doc_id):
     try:
@@ -92,7 +92,7 @@ def delete_document(doc_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/get-requirements', methods=['GET'])
+@document_management_bp.route('/api/get-requirements', methods=['GET'])
 @jwt_required()
 def get_requirements():
     try:
@@ -102,7 +102,7 @@ def get_requirements():
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/delete-requirement/<string:req_id>', methods=['DELETE'])
+@document_management_bp.route('/api/delete-requirement/<string:req_id>', methods=['DELETE'])
 @jwt_required()
 def delete_requirement(req_id):
     try:
@@ -116,7 +116,7 @@ def delete_requirement(req_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/add-requirement', methods=['POST'])
+@document_management_bp.route('/api/add-requirement', methods=['POST'])
 @jwt_required()
 def add_requirement():
     try:
@@ -134,7 +134,7 @@ def add_requirement():
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/check-req-exist/<string:req_id>', methods=['GET'])
+@document_management_bp.route('/api/check-req-exist/<string:req_id>', methods=['GET'])
 @jwt_required()
 def check_req_exist(req_id):
     """
@@ -149,7 +149,7 @@ def check_req_exist(req_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/check-req/<string:req_id>', methods=['GET'])
+@document_management_bp.route('/api/check-req/<string:req_id>', methods=['GET'])
 @jwt_required()
 def check_req(req_id):
     """
@@ -167,7 +167,7 @@ def check_req(req_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/check-doc-exist/<string:doc_id>', methods=['GET'])
+@document_management_bp.route('/api/check-doc-exist/<string:doc_id>', methods=['GET'])
 @jwt_required()
 def check_doc_exist(doc_id):
     """
@@ -181,7 +181,7 @@ def check_doc_exist(doc_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/edit-requirement/<string:req_id>', methods=['PUT'])
+@document_management_bp.route('/api/edit-requirement/<string:req_id>', methods=['PUT'])
 @jwt_required()
 def edit_requirement(req_id):
     """
@@ -211,7 +211,7 @@ def edit_requirement(req_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/hide-document/<string:doc_id>', methods=['PATCH'])
+@document_management_bp.route('/api/hide-document/<string:doc_id>', methods=['PATCH'])
 @jwt_required()
 def hide_document(doc_id):
     try:
@@ -225,7 +225,7 @@ def hide_document(doc_id):
         return jsonify({"error": str(e)}), 500
 
 
-@document_management_bp.route('/toggle-hide-document/<string:doc_id>', methods=['PATCH'])
+@document_management_bp.route('/api/toggle-hide-document/<string:doc_id>', methods=['PATCH'])
 @jwt_required()
 def toggle_hide_document(doc_id):
     try:

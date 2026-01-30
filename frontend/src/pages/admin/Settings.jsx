@@ -83,8 +83,7 @@ const Settings = () => {
         }
     };
 
-    const addAdmin = async (e) => {
-        e.preventDefault();
+    const addAdmin = async (email, role) => {
         setLoading(true);
         setError('');
 
@@ -96,12 +95,10 @@ const Settings = () => {
                     "X-CSRF-TOKEN": getCSRFToken(),
                 },
                 credentials: 'include',
-                body: JSON.stringify({ email: newEmail, role: newRole }),
+                body: JSON.stringify({ email, role }),
             });
 
             if (response.ok) {
-                setNewEmail('');
-                setNewRole('admin');
                 fetchAdmins();
             } else {
                 const errorData = await response.json();
@@ -566,7 +563,7 @@ const Settings = () => {
 
             <div className="admin-management-card">
                 <div className="admin-management-header">
-                    <h2>Current Admins</h2>
+                    <h2>Current Adminsss</h2>
                     <button onClick={() => setShowAddAdminPopup(true)} className="add-admin-btn">
                         Add Admin
                     </button>

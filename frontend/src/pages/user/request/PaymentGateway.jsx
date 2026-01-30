@@ -151,7 +151,7 @@ function PaymentGateway({
 
 
       // Call mark-document-paid endpoint
-      const response = await fetch("/user/payment/mark-document-paid", {
+      const response = await fetch("/api/mark-document-paid", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

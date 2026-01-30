@@ -36,7 +36,7 @@ def send_whatsapp_otp(phone, full_name, otp_code):
     return {"status": "success"}
 
 
-@authentication_user_bp.route('/check-id', methods=['POST'])
+@authentication_user_bp.route('/api/check-id', methods=['POST'])
 def check_id():
     # Get student ID from frontend
     student_id = request.json.get("student_id")
@@ -86,7 +86,7 @@ def check_id():
 
 
 
-@authentication_user_bp.route('/check-name', methods=['POST'])
+@authentication_user_bp.route('/api/check-name', methods=['POST'])
 def check_name():
     firstname = request.json.get("firstname")
     lastname = request.json.get("lastname")
@@ -135,7 +135,7 @@ def check_name():
         "masked_phone": phone[-4:]  
     }), 200
 
-@authentication_user_bp.route('/resend-otp', methods=['POST'])
+@authentication_user_bp.route('/api/resend-otp', methods=['POST'])
 def resend_otp():
     # Debug print
     print(f"[DEBUG] Session at resend: {dict(session)}")
@@ -171,7 +171,7 @@ def resend_otp():
     }), 200
 
 
-@authentication_user_bp.route('/verify-otp', methods=['POST'])
+@authentication_user_bp.route('/api/verify-otp', methods=['POST'])
 def verify_otp():
     print("=" * 50)
     print("[DEBUG] Received payload:", request.json)
@@ -231,7 +231,7 @@ def verify_otp():
     return response, 200
 
 
-@authentication_user_bp.route("/upload-authletter", methods=["POST"])
+@authentication_user_bp.route("/api/upload-authletter", methods=["POST"])
 @jwt_required()
 def upload_auth_letter():
     """

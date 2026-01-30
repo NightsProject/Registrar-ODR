@@ -39,7 +39,7 @@ def send_whatsapp_message(recipient_number, template_name, components=None):
         return {"error": str(e)}
     
 
-@whatsapp_bp.route("/send_template", methods=["POST"])
+@whatsapp_bp.route("/api/send_template", methods=["POST"])
 
 def send_message_endpoint():
 

@@ -20,20 +20,11 @@ db_pool = None
 
 def create_app(test_config=None):
     
-   
-    #initialize the database (create tables if not exist)
-    #initialize_db()
-    #initialize_and_populate()
+    initialize_db()
     load_dotenv()
-
-    #in production
-    #app = Flask(__name__, instance_relative_config=True, static_folder="static/react",  template_folder="static/react" )
+    app = Flask(__name__)
   
-    #in development
-    app = Flask(__name__, static_folder="../frontend/build/static", template_folder="../frontend/build")
-    
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)    
-    
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
     # =====================
     #  CONFIG
     # =====================
@@ -123,7 +114,7 @@ def create_app(test_config=None):
     
     #USER BLUEPRINTS
     from .user.authentication import authentication_user_bp as auth_user_blueprint
-    app.register_blueprint(auth_user_blueprint, url_prefix='/user')
+    app.register_blueprint(auth_user_blueprint)
     from .user.document_list import document_list_bp as document_list_blueprint
     app.register_blueprint(document_list_blueprint)
     from .user.landing import landing_bp as landing_blueprint
@@ -133,7 +124,7 @@ def create_app(test_config=None):
     from .user.tracking import tracking_bp as tracking_blueprint
     app.register_blueprint(tracking_blueprint)
     from .user.payment import payment_bp as payment_blueprint
-    app.register_blueprint(payment_blueprint, url_prefix='/user/payment')
+    app.register_blueprint(payment_blueprint)
 
     # ===================== 
     # MAYA WEBHOOK EXEMPTION
@@ -141,7 +132,7 @@ def create_app(test_config=None):
     # Maya can't send csrf tokens, so verify using signature instead
     @app.before_request
     def exempt_webhook_from_csrf():
-        if request.path == '/user/payment/maya/webhook' and request.method == 'POST':
+        if request.path == 'api/maya/webhook' and request.method == 'POST':
             g._jwt_extended_jwt_in_request_context = False
 
     #WHATSAPP BLUEPRINT
@@ -166,7 +157,6 @@ def create_app(test_config=None):
 
     from .admin.authentication.controller import init_oauth
     init_oauth(app)
-
 
     @app.after_request
     def set_coop_headers(response):

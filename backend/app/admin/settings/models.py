@@ -74,6 +74,18 @@ class Admin:
         finally:
             cur.close()
 
+    @staticmethod
+    def count():
+        """Count total number of admins in the database."""
+        conn = g.db_conn
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT COUNT(*) FROM admins")
+            result = cur.fetchone()
+            return result[0] if result else 0
+        finally:
+            cur.close()
+
 
     @staticmethod
     def add(email, role, profile_picture=None):

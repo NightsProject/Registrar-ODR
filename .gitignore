@@ -11,7 +11,8 @@ notes.txt
 flask_session/
 uploads/
 app/static/react/
-
+notess/
+docker-compose.yml
 # User-specific files
 *.rsuser
 *.suo

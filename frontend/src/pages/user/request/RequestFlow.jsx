@@ -638,7 +638,7 @@ function RequestFlow() {
             formData.append("requester_name", parsedAuthData.requesterName);
             formData.append("request_id", requestId);
 
-            const authUploadResponse = await fetch("/user/upload-authletter", {
+            const authUploadResponse = await fetch("/api/upload-authletter", {
               method: "POST",
               body: formData
             });

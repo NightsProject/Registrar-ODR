@@ -47,7 +47,7 @@ def verify_maya_ip():
         return
 
 
-@payment_bp.route('/maya/webhook', methods=['POST'])
+@payment_bp.route('/api/maya/webhook', methods=['POST'])
 def maya_webhook():
     """Handle Maya payment webhook"""
     try:
@@ -128,7 +128,7 @@ def verify_signature(payload_bytes, signature):
     return hmac.compare_digest(signature, expected)
 
 
-@payment_bp.route('/mark-paid', methods=['POST'])
+@payment_bp.route('/api/mark-paid', methods=['POST'])
 def mark_paid_manual():
     try:
         data = request.get_json() or {}
@@ -183,7 +183,7 @@ def mark_paid_manual():
 
 
 
-@payment_bp.route('/mark-document-paid', methods=['POST'])
+@payment_bp.route('/api/mark-document-paid', methods=['POST'])
 def mark_document_paid():
     try:
         data = request.get_json() or {}

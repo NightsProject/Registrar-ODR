@@ -52,7 +52,7 @@ function EnterId({ onNext, onBack, maskedPhone, setMaskedPhone, goBackToOptions}
 
         setLoading(true);
         try {
-            const response = await fetch("/user/check-id", {
+            const response = await fetch("/api/check-id", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
