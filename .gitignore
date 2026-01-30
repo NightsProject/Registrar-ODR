@@ -13,6 +13,7 @@ uploads/
 app/static/react/
 notess/
 docker-compose.yml
+
 # User-specific files
 *.rsuser
 *.suo
@@ -426,3 +427,4 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+docker-compose.yml
