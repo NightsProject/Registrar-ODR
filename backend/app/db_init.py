@@ -726,7 +726,6 @@ def initialize_db():
    ready_admin_settings_table()
    ready_open_request_restriction_table()
    ready_fee_table()
-   insert_sample_data()
    ready_others_docs_table()
    ready_changes_table()
    ready_available_dates_table()
@@ -734,6 +733,7 @@ def initialize_db():
    ready_test_students_table()
    ready_test_admins_table()
    ready_domain_whitelist_table()
+   insert_sample_data()
    print("Database and tables initialized successfully.")
 
 

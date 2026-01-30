@@ -12,4 +12,4 @@ COPY . .
 
 # Use Gunicorn for production-ready serving
 RUN pip install gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "run:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "run:app"]
