@@ -78,7 +78,7 @@ function Popup({ onClose, onSuccess, document }) {
 
   useEffect(() => {
   const csrfToken = getCSRFToken();
-  fetch("/admin/get-requirements", {
+  fetch("/api/get-requirements", {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
