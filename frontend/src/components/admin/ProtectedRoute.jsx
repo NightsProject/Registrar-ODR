@@ -16,56 +16,57 @@ const ProtectedRoute = ({
   requiredPermissions = [], 
   redirectTo = '/admin/waiting' 
 }) => {
-
-  const { user, role, isLoading, isAuthenticated, canAccessRoute, hasPermission } = useAuth();
+  const { 
+    user, 
+    role, 
+    isAuthenticated, 
+    canAccessRoute, 
+    hasPermission, 
+    initialAuthCheckComplete 
+  } = useAuth();
   const location = useLocation();
 
-  // Show loading spinner while checking authentication
-  if (isLoading) {
+  // 1. WHILE CHECKING: Show spinner
+  // As long as initialAuthCheckComplete is false, we wait.
+  if (!initialAuthCheckComplete) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner message="Checking permissions..." />
+        <LoadingSpinner message="Verifying session..." />
       </div>
     );
   }
 
-  // Redirect to login if not authenticated
+  // 2. NOT AUTHENTICATED: Redirect to login
+  // Now that check is complete, if not authenticated, go to login.
   if (!isAuthenticated || !user) {
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  // Redirect to waiting page if role is 'none' (pending approval)
+  // 3. ROLE 'NONE': Pending approval
   if (role === 'none') {
     return <Navigate to="/admin/waiting" state={{ from: location }} replace />;
   }
 
-  // Check if user can access current route
+  // 4. ROUTE ACCESS: Check path-based permissions
   const currentPath = location.pathname;
   if (!canAccessRoute(currentPath)) {
-    // Redirect to the first accessible page or waiting page
     const accessiblePath = getFirstAccessiblePath(role);
-    return <Navigate to={accessiblePath} state={{ from: location }} replace />;
+    return <Navigate to={accessiblePath} replace />;
   }
 
-
-  // Check individual permissions if specified
+  // 5. SPECIFIC PERMISSIONS: Check granular permissions
   if (requiredPermissions.length > 0) {
-    // Check if user has ANY of the required permissions (OR logic)
     const hasAnyPermission = requiredPermissions.some(permission => {
-      if (permission === 'view_request_details') {
-        // Special handling for view_request_details permission
-        return hasPermission('view_request_details');
-      }
-      return canAccessRoute(getPathForPermission(permission));
+      if (permission === 'view_request_details') return hasPermission('view_request_details');
+      return hasPermission(permission); // Use hasPermission directly for cleaner logic
     });
 
     if (!hasAnyPermission) {
       const accessiblePath = getFirstAccessiblePath(role);
-      return <Navigate to={accessiblePath} state={{ from: location }} replace />;
+      return <Navigate to={accessiblePath} replace />;
     }
   }
 
-  // User is authorized, render the protected content
   return children;
 };
 
@@ -75,10 +76,13 @@ const ProtectedRoute = ({
  * @returns {string} - First accessible path
  */
 const getFirstAccessiblePath = (role) => {
+
   const rolePaths = {
     admin: '/admin/dashboard',
     manager: '/admin/dashboard',
+    developer: '/admin/dashboard',
     staff: '/admin/dashboard',
+    auditor: '/admin/dashboard',
     none: '/admin/waiting',
   };
 
@@ -91,6 +95,7 @@ const getFirstAccessiblePath = (role) => {
  * @returns {string} - Corresponding path
  */
 const getPathForPermission = (permission) => {
+
   const permissionPaths = {
     dashboard: '/admin/dashboard',
     requests: '/admin/requests',
@@ -98,6 +103,7 @@ const getPathForPermission = (permission) => {
     documents: '/admin/document',
     logs: '/admin/logs',
     settings: '/admin/settings',
+    developers: '/admin/developers',
   };
 
   return permissionPaths[permission] || '/admin/dashboard';

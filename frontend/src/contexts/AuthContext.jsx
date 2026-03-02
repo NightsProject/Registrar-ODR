@@ -1,42 +1,20 @@
-
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { normalizeRole } from '../utils/roleUtils';
+import { normalizeRole, hasPermission as checkPermission, canAccessRoute as checkRouteAccess, getFilteredNavigationItems as checkFilteredItems } from '../utils/roleUtils';
 import { getCSRFToken } from '../utils/csrf';
 
 const AuthContext = createContext();
 
-/**
- * Check if JWT token exists in cookies
- * @returns {boolean} - True if JWT token cookie exists
- */
-const hasJWTToken = () => {
-  const cookies = document.cookie.split(';');
-  return cookies.some(cookie => {
-    const [name, ...valueParts] = cookie.trim().split('=');
-    return name === 'access_token_cookie' && valueParts.join('=').length > 0;
-  });
-};
-
-/**
- * Authentication Provider Component
- * Manages global authentication state and user role
- */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-
-
-  /**
-   * Fetch current user information and role
-   */
+  const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
 
   const fetchCurrentUser = async () => {
     try {
-      setIsLoading(true);
+      // Don't set isLoading(true) here if it's already true from initialization
+      // to avoid unnecessary re-renders
       const response = await fetch('/api/admin/current-user', {
         method: 'GET',
         credentials: 'include',
@@ -51,17 +29,8 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setRole(normalizeRole(userData.role));
         setIsAuthenticated(true);
-        console.log('User authentication successful:', userData);
         return true;
-      } else if (response.status === 401) {
-        // Token expired or invalid, clear authentication state
-        setUser(null);
-        setRole(null);
-        setIsAuthenticated(false);
-        console.log('Authentication token expired or invalid');
-        return false;
       } else {
-        // User not authenticated or token invalid
         setUser(null);
         setRole(null);
         setIsAuthenticated(false);
@@ -69,15 +38,12 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error fetching current user:', error);
-      setUser(null);
-      setRole(null);
       setIsAuthenticated(false);
       return false;
     } finally {
       setIsLoading(false);
     }
   };
-
   /**
    * Update user role
    * @param {string} newRole - New role to set
@@ -119,27 +85,16 @@ export const AuthProvider = ({ children }) => {
   };
 
 
+
   /**
    * Check if user has specific permission
    * @param {string} permission - Permission to check
    * @returns {boolean} - True if user has permission
    */
   const hasPermission = (permission) => {
-    if (!role || !permission) return false;
-    
-
-
-
-    const rolePermissions = {
-      admin: ['dashboard', 'requests', 'transactions', 'documents', 'logs', 'settings'],
-      manager: ['dashboard', 'requests', 'documents', 'logs'],
-      auditor:['dashboard', 'transactions', 'view_request_details'],
-      staff: ['dashboard', 'requests'],
-      none: [],
-    };
-    
-    return rolePermissions[role]?.includes(permission) || false;
+    return checkPermission(role, permission);
   };
+
 
   /**
    * Check if user can access specific route
@@ -147,20 +102,10 @@ export const AuthProvider = ({ children }) => {
    * @returns {boolean} - True if user can access route
    */
   const canAccessRoute = (path) => {
-    if (!role || !path) return false;
-    
-    const routePermissions = {
-      '/admin/dashboard': 'dashboard',
-      '/admin/requests': 'requests',
-      '/admin/transactions': 'transactions',
-      '/admin/document': 'documents',
-      '/admin/logs': 'logs',
-      '/admin/settings': 'settings',
-    };
-    
-    const permission = routePermissions[path];
-    return permission ? hasPermission(permission) : true;
+    return checkRouteAccess(role, path);
   };
+
+
 
   /**
    * Get filtered navigation items based on user role
@@ -169,31 +114,20 @@ export const AuthProvider = ({ children }) => {
   const getFilteredNavigationItems = () => {
     if (!role) return [];
     
-    const navigationItems = [
-      { name: 'Dashboard', path: '/admin/dashboard', permission: 'dashboard' },
-      { name: 'Requests', path: '/admin/requests', permission: 'requests' },
-      { name: 'Transactions', path: '/admin/transactions', permission: 'transactions' },
-      { name: 'Documents', path: '/admin/document', permission: 'documents' },
-      { name: 'Logs', path: '/admin/logs', permission: 'logs' },
-      { name: 'Settings', path: '/admin/settings', permission: 'settings' }
-    ];
-    
-    return navigationItems.filter(item => hasPermission(item.permission));
+    // Use the centralized function from roleUtils
+    return checkFilteredItems(role);
   };
-
 
   // Initialize authentication state on component mount
   useEffect(() => {
-    // Only attempt to fetch current user if JWT token exists
-    if (hasJWTToken()) {
-      fetchCurrentUser();
-    } else {
-      // No JWT token found, user is not authenticated
-      setIsLoading(false);
-      setUser(null);
-      setRole(null);
-      setIsAuthenticated(false);
-    }
+    const initAuth = async () => {
+      // Always attempt to fetch the user on mount.
+      // The browser will automatically send the HttpOnly cookie.
+      await fetchCurrentUser();
+      setInitialAuthCheckComplete(true);
+    };
+    
+    initAuth();
   }, []);
 
   const contextValue = {
@@ -202,6 +136,7 @@ export const AuthProvider = ({ children }) => {
     role,
     isLoading,
     isAuthenticated,
+    initialAuthCheckComplete,
     
     // Actions
     updateRole,

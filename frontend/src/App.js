@@ -14,8 +14,10 @@ import Documents from "./pages/admin/Documents/Documents";
 import Requests from "./pages/admin/manage_request/Requests";
 import AssignRequests from "./pages/admin/manage_request/AssignRequests";
 import Logs from "./pages/admin/Logs";
+
 import Transactions from "./pages/admin/transactions/Transactions";
 import Settings from "./pages/admin/Settings";
+import Developers from "./pages/admin/Developers";
 import RequestFlow from "./pages/user/request/RequestFlow";
 import RequestViewPage_Flow from "./pages/admin/manage_request/RequestViewPage_Flow";
 import ProtectedRoute, { AccessDenied } from "./components/admin/ProtectedRoute";
@@ -27,11 +29,11 @@ function App() {
       <BrowserRouter>
 
         <Routes>
-          <Route path="/" element={<Navigate to="user/Landing" replace />} />
+          <Route path="/" element={<Navigate to="/user/Landing" replace />} />
 
           {/* User routes with redirect and layout */}
           <Route path="/user" element={<UserMasterLayout />}>
-            <Route index element={<Navigate to="Landing" replace />} />
+            <Route index element={<Navigate to="/user/Landing" replace />} />
             <Route path="Landing" element={<Landing />} />
             <Route path="login" element={<LoginFlow />} />
             <Route path="Request" element={<RequestFlow />} />
@@ -102,10 +104,18 @@ function App() {
               </ProtectedRoute>
             } />
             
+
             {/* Settings - Admin only */}
             <Route path="settings" element={
               <ProtectedRoute requiredPermissions={['settings']}>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            
+            {/* Developers - Developer role only */}
+            <Route path="developers" element={
+              <ProtectedRoute requiredPermissions={['developers']}>
+                <Developers />
               </ProtectedRoute>
             } />
           </Route>

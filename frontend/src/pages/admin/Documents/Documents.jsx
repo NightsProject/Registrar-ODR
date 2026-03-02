@@ -57,7 +57,7 @@ function Documents() {
 
   const checkDocumentExists = async (doc_id) => {
     try {
-      const res = await fetch(`/admin/check-doc-exist/${doc_id}`, {
+      const res = await fetch(`/api/check-doc-exist/${doc_id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ function Documents() {
   const handleDelete = async (docId) => {
     try {
       setLoading(true);
-      const res = await fetch(`/admin/delete-document/${docId}`, { 
+      const res = await fetch(`/api/delete-document/${docId}`, { 
         method: "DELETE",
         headers: {
           'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ function Documents() {
   const handleHide = async (docId) => {
     try {
       setLoading(true);
-      const res = await fetch(`/admin/toggle-hide-document/${docId}`, { 
+      const res = await fetch(`/api/toggle-hide-document/${docId}`, { 
         method: "PATCH",
         headers: {
           'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ function Documents() {
 
     const csrfToken = getCSRFToken();
     const [docsRes, reqRes, joinRes] = await Promise.all([
-      fetch("/admin/get-documents", {
+      fetch("/api/get-documents", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ function Documents() {
         },
         credentials: 'include',
       }),
-      fetch("/admin/get-document-requirements", {
+      fetch("/api/get-document-requirements", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -165,7 +165,7 @@ function Documents() {
         },
         credentials: 'include',
       }),
-      fetch("/admin/get-documents-with-requirements", {
+      fetch("/api/get-documents-with-requirements", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

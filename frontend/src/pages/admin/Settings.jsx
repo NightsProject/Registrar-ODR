@@ -47,6 +47,13 @@ const Settings = () => {
     const [bulkDateReason, setBulkDateReason] = useState('');
     const [loadingDateOps, setLoadingDateOps] = useState(false);
 
+    // Domain whitelist state
+    const [domains, setDomains] = useState([]);
+    const [newDomain, setNewDomain] = useState('');
+    const [newDomainDescription, setNewDomainDescription] = useState('');
+    const [showDomainManagement, setShowDomainManagement] = useState(false);
+    const [loadingDomainOps, setLoadingDomainOps] = useState(false);
+
 
     useEffect(() => {
         fetchAdmins();
@@ -55,7 +62,10 @@ const Settings = () => {
         if (showDateManagement) {
             fetchDateSettings();
         }
-    }, [showDateManagement]);
+        if (showDomainManagement) {
+            fetchDomains();
+        }
+    }, [showDateManagement, showDomainManagement]);
 
     const fetchAdmins = async () => {
         try {
@@ -73,8 +83,7 @@ const Settings = () => {
         }
     };
 
-    const addAdmin = async (e) => {
-        e.preventDefault();
+    const addAdmin = async (email, role) => {
         setLoading(true);
         setError('');
 
@@ -86,12 +95,10 @@ const Settings = () => {
                     "X-CSRF-TOKEN": getCSRFToken(),
                 },
                 credentials: 'include',
-                body: JSON.stringify({ email: newEmail, role: newRole }),
+                body: JSON.stringify({ email, role }),
             });
 
             if (response.ok) {
-                setNewEmail('');
-                setNewRole('admin');
                 fetchAdmins();
             } else {
                 const errorData = await response.json();
@@ -431,6 +438,7 @@ const Settings = () => {
         }
     };
 
+
     const isAvailabilityChanged = 
         startHour !== initialAvailability.startHour ||
         startMinute !== initialAvailability.startMinute ||
@@ -439,6 +447,112 @@ const Settings = () => {
         endMinute !== initialAvailability.endMinute ||
         endAmpm !== initialAvailability.endAmpm ||
         JSON.stringify([...availableDays].sort()) !== JSON.stringify([...initialAvailability.availableDays].sort());
+
+    // Domain management functions
+    const fetchDomains = async () => {
+        try {
+            const response = await fetch('/api/admin/domain-whitelist', {
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setDomains(data.domains || []);
+            } else {
+                setError('Failed to fetch domains');
+            }
+        } catch (err) {
+            setError('Error fetching domains');
+        }
+    };
+
+    const addDomain = async (e) => {
+        e.preventDefault();
+        if (!newDomain.trim()) return;
+
+        setLoadingDomainOps(true);
+        setError('');
+
+        try {
+            const response = await fetch('/api/admin/domain-whitelist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "X-CSRF-TOKEN": getCSRFToken(),
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    domain: newDomain.trim(),
+                    description: newDomainDescription.trim(),
+                    is_active: true
+                }),
+            });
+
+            if (response.ok) {
+                setNewDomain('');
+                setNewDomainDescription('');
+                fetchDomains();
+            } else {
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to add domain');
+            }
+        } catch (err) {
+            setError('Error adding domain');
+        } finally {
+            setLoadingDomainOps(false);
+        }
+    };
+
+    const toggleDomainStatus = async (domainId) => {
+        setLoadingDomainOps(true);
+        setError('');
+
+        try {
+            const response = await fetch(`/api/admin/domain-whitelist/${domainId}/toggle`, {
+                method: 'PATCH',
+                headers: {
+                    "X-CSRF-TOKEN": getCSRFToken(),
+                },
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                fetchDomains();
+            } else {
+                setError('Failed to toggle domain status');
+            }
+        } catch (err) {
+            setError('Error toggling domain status');
+        } finally {
+            setLoadingDomainOps(false);
+        }
+    };
+
+    const deleteDomain = async (domainId) => {
+        if (!window.confirm('Are you sure you want to delete this domain?')) return;
+
+        setLoadingDomainOps(true);
+        setError('');
+
+        try {
+            const response = await fetch(`/api/admin/domain-whitelist/${domainId}`, {
+                method: 'DELETE',
+                headers: {
+                    "X-CSRF-TOKEN": getCSRFToken(),
+                },
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                fetchDomains();
+            } else {
+                setError('Failed to delete domain');
+            }
+        } catch (err) {
+            setError('Error deleting domain');
+        } finally {
+            setLoadingDomainOps(false);
+        }
+    };
 
     return (
         <div className="settings-page">
@@ -449,7 +563,7 @@ const Settings = () => {
 
             <div className="admin-management-card">
                 <div className="admin-management-header">
-                    <h2>Current Admins</h2>
+                    <h2>Current Adminsss</h2>
                     <button onClick={() => setShowAddAdminPopup(true)} className="add-admin-btn">
                         Add Admin
                     </button>
@@ -491,7 +605,7 @@ const Settings = () => {
                                             className="delete-btn"
                                             onClick={() => deleteAdmin(admin.email)}
                                         >
-                                            Delete
+                                           
                                         </button>
                                     </td>
                                 </tr>
@@ -785,6 +899,116 @@ const Settings = () => {
                                                             disabled={loadingDateOps}
                                                         >
                                                             Remove
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="availability-settings" style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div>
+                        <h2>Domain Whitelist Management</h2>
+                        <p>Manage domains allowed for admin authentication. Only users from whitelisted domains can access the admin panel.</p>
+                    </div>
+                    <button
+                        onClick={() => setShowDomainManagement(!showDomainManagement)}
+                        className="add-admin-btn"
+                        style={{ backgroundColor: showDomainManagement ? '#dc3545' : '#007bff' }}
+                    >
+                        {showDomainManagement ? 'Hide Domain Management' : 'Manage Domains'}
+                    </button>
+                </div>
+
+                {showDomainManagement && (
+                    <div className="date-management-section">
+                        {/* Add New Domain */}
+                        <div className="date-management-card">
+                            <h3>Add New Domain</h3>
+                            <form onSubmit={addDomain}>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'end', flexWrap: 'wrap' }}>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label>Domain:</label>
+                                        <input
+                                            type="text"
+                                            value={newDomain}
+                                            onChange={(e) => setNewDomain(e.target.value)}
+                                            placeholder="e.g., g.msuiit.edu.ph"
+                                            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: '200px' }}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                                        <label>Description (optional):</label>
+                                        <input
+                                            type="text"
+                                            value={newDomainDescription}
+                                            onChange={(e) => setNewDomainDescription(e.target.value)}
+                                            placeholder="Brief description of the domain"
+                                            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="update-settings-btn"
+                                        disabled={!newDomain.trim() || loadingDomainOps}
+                                    >
+                                        {loadingDomainOps ? 'Adding...' : 'Add Domain'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Current Domains */}
+                        <div className="date-management-card">
+                            <h3>Current Whitelisted Domains</h3>
+                            {domains.length === 0 ? (
+                                <p>No domains configured. Add domains above to allow admin authentication.</p>
+                            ) : (
+                                <div className="date-settings-table-wrapper">
+                                    <table className="date-settings-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Domain</th>
+                                                <th>Description</th>
+                                                <th>Status</th>
+                                                <th>Created</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {domains.map((domain) => (
+                                                <tr key={domain.id}>
+                                                    <td>{domain.domain}</td>
+                                                    <td>{domain.description || '-'}</td>
+                                                    <td>
+                                                        <span className={`status-badge ${domain.is_active ? 'available' : 'unavailable'}`}>
+                                                            {domain.is_active ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                    <td>{domain.created_at}</td>
+                                                    <td>
+                                                        <button
+                                                            className="update-settings-btn"
+                                                            onClick={() => toggleDomainStatus(domain.id)}
+                                                            disabled={loadingDomainOps}
+                                                            style={{ marginRight: '5px', padding: '4px 8px', fontSize: '12px' }}
+                                                        >
+                                                            {domain.is_active ? 'Deactivate' : 'Activate'}
+                                                        </button>
+                                                        <button
+                                                            className="delete-btn"
+                                                            onClick={() => deleteDomain(domain.id)}
+                                                            disabled={loadingDomainOps}
+                                                            style={{ padding: '4px 8px', fontSize: '12px' }}
+                                                        >
                                                         </button>
                                                     </td>
                                                 </tr>

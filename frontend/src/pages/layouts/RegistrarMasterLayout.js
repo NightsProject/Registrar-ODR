@@ -11,10 +11,11 @@ import "./RegistrarMasterLayout.css";
 function RegistrarMasterLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, role, isLoading, logout, canAccessRoute } = useAuth();
+  const { user, role, isLoading, logout, canAccessRoute, initialAuthCheckComplete } = useAuth();
 
   // Show loading spinner while checking authentication
-  if (isLoading) {
+  // Only stop showing loading after initial auth check is complete
+  if (isLoading && !initialAuthCheckComplete) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner message="Loading..." />

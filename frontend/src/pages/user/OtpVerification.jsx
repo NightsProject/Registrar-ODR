@@ -24,7 +24,7 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
     if (otpCode.length < 6) return triggerError("Please enter a valid 6-digit OTP.");
 
     try {
-      const response = await fetch("/user/verify-otp", {
+      const response = await fetch("/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -69,7 +69,7 @@ function OtpVerification({ onNext, onBack, studentId, maskedPhone, setMaskedPhon
     setResending(true);
 
     try {
-      const response = await fetch("/user/resend-otp", {
+      const response = await fetch("/api/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

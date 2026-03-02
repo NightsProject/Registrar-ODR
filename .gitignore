@@ -10,6 +10,9 @@ test/
 notes.txt
 flask_session/
 uploads/
+app/static/react/
+notess/
+docker-compose.yml
 
 # User-specific files
 *.rsuser
@@ -424,3 +427,4 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+docker-compose.yml

@@ -47,7 +47,7 @@ function EnterName({ onNext, onBack, maskedPhone, setMaskedPhone, goBackToOption
         setLastnameError("");
 
         try {
-            const response = await fetch("/user/check-name", {
+            const response = await fetch("/api/check-name", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ firstname: Firstname, lastname: Lastname})

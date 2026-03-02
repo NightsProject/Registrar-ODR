@@ -23,7 +23,7 @@ function TrackFlow() {
     const [searchParams] = useSearchParams();
 
     const MAYA_PUBLIC_KEY = 'pk-Z0OSzLvIcOI2UIvDhdTGVVfRSSeiGStnceqwUE7n0Ah';
-    const WEBSITE_LINK = "https://registrar-odr.onrender.com";
+    const WEBSITE_LINK = "https://nightsproject.syn-forge.com";
 
     // the 'data' parameter will hold the response from the tracking API
     const handleTrackIdSubmit = (data, skipOtp = false) => {
@@ -240,6 +240,7 @@ function TrackFlow() {
 
             if (pendingPayment) {
                 const payment = JSON.parse(pendingPayment);
+                console.log("Payment object from localStorage:", payment);
 
                 if (payment.trackingNumber === trackingNumber) {
                     // Restore trackData and studentId from localStorage
@@ -255,7 +256,7 @@ function TrackFlow() {
                             try {
                                 console.log("[MAYA][BROWSER] Trying to mark paid via backend");
                                 console.log("Payment Reference Number:", payment.checkoutId);
-                                const resp = await fetch('/user/payment/mark-paid', {
+                                const resp = await fetch('/api/mark-paid', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',

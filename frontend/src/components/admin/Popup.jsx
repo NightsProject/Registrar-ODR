@@ -31,7 +31,7 @@ function Popup({ onClose, onSuccess, document }) {
   const refreshRequirements = async () => {
     try {
       const csrfToken = getCSRFToken();
-      const res = await fetch("/admin/get-requirements", {
+      const res = await fetch("/api/get-requirements", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ function Popup({ onClose, onSuccess, document }) {
 
   useEffect(() => {
   const csrfToken = getCSRFToken();
-  fetch("/admin/get-requirements", {
+  fetch("/api/get-requirements", {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -206,8 +206,8 @@ function Popup({ onClose, onSuccess, document }) {
 
 
     const url = isEditMode
-      ? `/admin/edit-document/${document.doc_id}`
-      : "/admin/add-documents";
+      ? `/api/edit-document/${document.doc_id}`
+      : "/api/add-documents";
 
     const method = isEditMode ? "PUT" : "POST";
 
