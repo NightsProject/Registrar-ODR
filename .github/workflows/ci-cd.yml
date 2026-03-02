@@ -27,7 +27,7 @@ jobs:
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
           file: ./backend/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
