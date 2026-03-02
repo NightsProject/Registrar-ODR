@@ -25,6 +25,8 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Track when initial authentication check is complete to prevent race conditions
+  const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
 
 
 
@@ -155,13 +157,20 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Only attempt to fetch current user if JWT token exists
     if (hasJWTToken()) {
-      fetchCurrentUser();
+      const checkAuth = async () => {
+        const result = await fetchCurrentUser();
+        // Mark initial auth check as complete after fetchCurrentUser finishes
+        setInitialAuthCheckComplete(true);
+      };
+      checkAuth();
     } else {
       // No JWT token found, user is not authenticated
       setIsLoading(false);
       setUser(null);
       setRole(null);
       setIsAuthenticated(false);
+      // Mark initial auth check as complete when no token exists
+      setInitialAuthCheckComplete(true);
     }
   }, []);
 
@@ -171,6 +180,7 @@ export const AuthProvider = ({ children }) => {
     role,
     isLoading,
     isAuthenticated,
+    initialAuthCheckComplete,
     
     // Actions
     updateRole,

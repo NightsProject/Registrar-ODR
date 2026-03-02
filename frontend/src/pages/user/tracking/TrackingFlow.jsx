@@ -23,7 +23,7 @@ function TrackFlow() {
     const [searchParams] = useSearchParams();
 
     const MAYA_PUBLIC_KEY = 'pk-Z0OSzLvIcOI2UIvDhdTGVVfRSSeiGStnceqwUE7n0Ah';
-    const WEBSITE_LINK = "https://registrar-odr.onrender.com";
+    const WEBSITE_LINK = "https://nightsproject.syn-forge.com";
 
     // the 'data' parameter will hold the response from the tracking API
     const handleTrackIdSubmit = (data, skipOtp = false) => {

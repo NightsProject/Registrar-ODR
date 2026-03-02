@@ -737,14 +737,12 @@ def initialize_db():
    print("Database and tables initialized successfully.")
 
 
-
 def initialize_and_populate():
    """Initialize database, tables, and populate independent tables."""
    initialize_db()
    populate_independent_tables()
    populate_logs_table()
    print("Database initialized and independent tables populated successfully.")
-
 
 
 def populate_only():

@@ -17,11 +17,12 @@ const ProtectedRoute = ({
   redirectTo = '/admin/waiting' 
 }) => {
 
-  const { user, role, isLoading, isAuthenticated, canAccessRoute, hasPermission } = useAuth();
+  const { user, role, isLoading, isAuthenticated, canAccessRoute, hasPermission, initialAuthCheckComplete } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking authentication
-  if (isLoading) {
+  // Only stop showing loading after initial auth check is complete
+  if (isLoading && !initialAuthCheckComplete) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner message="Checking permissions..." />
@@ -29,8 +30,9 @@ const ProtectedRoute = ({
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated || !user) {
+  // Redirect to login if not authenticated AND initial auth check is complete
+  // This prevents redirecting before the auth check has finished
+  if ((!isAuthenticated || !user) && initialAuthCheckComplete) {
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
