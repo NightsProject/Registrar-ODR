@@ -1,6 +1,3 @@
-
-
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ButtonLink from "../../components/common/ButtonLink";
@@ -15,6 +12,7 @@ function Landing() {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [showTestModePopup, setShowTestModePopup] = useState(false);
+  const [testModeAvailable, setTestModeAvailable] = useState(false);
 
   const [settings, setSettings] = useState(null);
   const [announcement, setAnnouncement] = useState('');
@@ -45,7 +43,8 @@ function Landing() {
     try {
       const data = await testModeService.getTestMode();
       if (data.test_mode) {
-        setShowTestModePopup(true);
+        // Don't show popup automatically - just track that test mode is available
+        setTestModeAvailable(true);
       }
     } catch (error) {
       console.error('Error checking test mode:', error);
@@ -231,6 +230,17 @@ function Landing() {
           isOpen={showTestModePopup}
           onClose={() => setShowTestModePopup(false)}
         />
+      )}
+
+      {/* Floating Test Mode Button - Only visible when test mode is available */}
+      {testModeAvailable && (
+        <button 
+          className="test-mode-floating-btn"
+          onClick={() => setShowTestModePopup(true)}
+          title="Test Mode - Click to open"
+        >
+          <span className="test-mode-icon">ℹ️</span>
+        </button>
       )}
     </div>
   );

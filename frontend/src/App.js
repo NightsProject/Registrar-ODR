@@ -29,11 +29,11 @@ function App() {
       <BrowserRouter>
 
         <Routes>
-          <Route path="/" element={<Navigate to="user/Landing" replace />} />
+          <Route path="/" element={<Navigate to="/user/Landing" replace />} />
 
           {/* User routes with redirect and layout */}
           <Route path="/user" element={<UserMasterLayout />}>
-            <Route index element={<Navigate to="Landing" replace />} />
+            <Route index element={<Navigate to="/user/Landing" replace />} />
             <Route path="Landing" element={<Landing />} />
             <Route path="login" element={<LoginFlow />} />
             <Route path="Request" element={<RequestFlow />} />
