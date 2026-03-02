@@ -4,39 +4,17 @@ import { getCSRFToken } from '../utils/csrf';
 
 const AuthContext = createContext();
 
-/**
- * Check if JWT token exists in cookies
- * @returns {boolean} - True if JWT token cookie exists
- */
-const hasJWTToken = () => {
-  const cookies = document.cookie.split(';');
-  return cookies.some(cookie => {
-    const [name, ...valueParts] = cookie.trim().split('=');
-    return name === 'access_token_cookie' && valueParts.join('=').length > 0;
-  });
-};
-
-/**
- * Authentication Provider Component
- * Manages global authentication state and user role
- */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  // Track when initial authentication check is complete to prevent race conditions
   const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
-
-
-
-  /**
-   * Fetch current user information and role
-   */
 
   const fetchCurrentUser = async () => {
     try {
-      setIsLoading(true);
+      // Don't set isLoading(true) here if it's already true from initialization
+      // to avoid unnecessary re-renders
       const response = await fetch('/api/admin/current-user', {
         method: 'GET',
         credentials: 'include',
@@ -51,17 +29,8 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setRole(normalizeRole(userData.role));
         setIsAuthenticated(true);
-        console.log('User authentication successful:', userData);
         return true;
-      } else if (response.status === 401) {
-        // Token expired or invalid, clear authentication state
-        setUser(null);
-        setRole(null);
-        setIsAuthenticated(false);
-        console.log('Authentication token expired or invalid');
-        return false;
       } else {
-        // User not authenticated or token invalid
         setUser(null);
         setRole(null);
         setIsAuthenticated(false);
@@ -69,15 +38,12 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error fetching current user:', error);
-      setUser(null);
-      setRole(null);
       setIsAuthenticated(false);
       return false;
     } finally {
       setIsLoading(false);
     }
   };
-
   /**
    * Update user role
    * @param {string} newRole - New role to set
@@ -152,26 +118,16 @@ export const AuthProvider = ({ children }) => {
     return checkFilteredItems(role);
   };
 
-
   // Initialize authentication state on component mount
   useEffect(() => {
-    // Only attempt to fetch current user if JWT token exists
-    if (hasJWTToken()) {
-      const checkAuth = async () => {
-        const result = await fetchCurrentUser();
-        // Mark initial auth check as complete after fetchCurrentUser finishes
-        setInitialAuthCheckComplete(true);
-      };
-      checkAuth();
-    } else {
-      // No JWT token found, user is not authenticated
-      setIsLoading(false);
-      setUser(null);
-      setRole(null);
-      setIsAuthenticated(false);
-      // Mark initial auth check as complete when no token exists
+    const initAuth = async () => {
+      // Always attempt to fetch the user on mount.
+      // The browser will automatically send the HttpOnly cookie.
+      await fetchCurrentUser();
       setInitialAuthCheckComplete(true);
-    }
+    };
+    
+    initAuth();
   }, []);
 
   const contextValue = {
