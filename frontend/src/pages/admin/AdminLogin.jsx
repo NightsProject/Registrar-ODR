@@ -2,15 +2,36 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { testModeService } from "../../services/registrationService";
+import TestModePopup from "../../components/user/TestModePopup";
 import bgImage from "./assets/Motif.png";
 import logo from "./assets/MSUIITLogo.png";
 import myIITLogo from "./assets/myiit.gif"; 
+import "./AdminLogin.css";
 
 function AdminLogin() {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [testModeAvailable, setTestModeAvailable] = useState(false);
+  const [showTestModePopup, setShowTestModePopup] = useState(false);
+
+  // Check for test mode on component mount
+  useEffect(() => {
+    checkTestMode();
+  }, []);
+
+  const checkTestMode = async () => {
+    try {
+      const data = await testModeService.getTestMode();
+      if (data.test_mode) {
+        setTestModeAvailable(true);
+      }
+    } catch (error) {
+      console.error('Error checking test mode:', error);
+    }
+  };
 
 
 
@@ -165,6 +186,25 @@ function AdminLogin() {
           </div>
         </div>
       </div>
+
+      {/* Test Mode Popup */}
+      {showTestModePopup && (
+        <TestModePopup
+          isOpen={showTestModePopup}
+          onClose={() => setShowTestModePopup(false)}
+        />
+      )}
+
+      {/* Floating Test Mode Button - Only visible when test mode is available */}
+      {testModeAvailable && (
+        <button 
+          className="test-mode-floating-btn"
+          onClick={() => setShowTestModePopup(true)}
+          title="Test Mode - Click to open"
+        >
+          <span className="test-mode-icon">ℹ️</span>
+        </button>
+      )}
     </div>
   );
 }
