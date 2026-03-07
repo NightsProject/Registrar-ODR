@@ -5,6 +5,7 @@ from . import payment_bp
 from ...whatsapp.controller import send_whatsapp_message
 from app.user.authentication.models import AuthenticationUser
 from .models import Payment
+from app.services.logging_service import log_payment_action, log_error
 import hmac
 import hashlib
 from flask_jwt_extended import jwt_required
@@ -90,6 +91,13 @@ def maya_webhook():
                 current_app.logger.info(
                     f"[MAYA] Payment confirmed: {tracking_number}, Payment ID: {payment_id}"
                 )
+                # Log successful payment
+                log_payment_action(
+                    action="payment_confirmed",
+                    request_id=tracking_number,
+                    amount=amount,
+                    details=f"Payment ID: {payment_id}, Student ID: {student_id}"
+                )
             else:
                 current_app.logger.warning(
                     f"[MAYA] Payment processing failed for {tracking_number}: {result['message']}"
@@ -100,6 +108,7 @@ def maya_webhook():
         return jsonify({'success': True}), 200
         
     except Exception as e:
+        log_error("maya_webhook", str(e))
         current_app.logger.error(f"[MAYA] Webhook error: {str(e)}")
         # Return success to prevent Maya from retrying for transient errors
         return jsonify({'success': True}), 200
@@ -148,6 +157,14 @@ def mark_paid_manual():
         if result.get("success"):
             if result.get("was_already_paid"):
                 return jsonify(result), 200
+            
+            # Log successful payment
+            log_payment_action(
+                action="payment_confirmed_manual",
+                request_id=tracking_number,
+                amount=amount,
+                details=f"Payment ID: {payment_id}, Student ID: {student_id}"
+            )
             
             user_data = AuthenticationUser.check_student_in_school_system(student_id)
             
@@ -204,6 +221,14 @@ def mark_document_paid():
         result = Payment.update_multiple_documents_payment_status(tracking_number, student_id, doc_ids)
         
         if result.get("success"):
+            # Log successful document payment
+            log_payment_action(
+                action="document_payment_confirmed",
+                request_id=tracking_number,
+                amount=amount,
+                details=f"Doc IDs: {doc_ids}, Student ID: {student_id}"
+            )
+            
             # Send WhatsApp notification
             user_data = AuthenticationUser.check_student_in_school_system(student_id)
             

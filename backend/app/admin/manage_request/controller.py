@@ -4,6 +4,7 @@ from flask import jsonify, request, g, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.decorator import jwt_required_with_role
 from .models import ManageRequestModel
+from app.services.logging_service import log_request_action, log_admin_action, log_document_action
 
 
 def send_whatsapp_status_update(phone, full_name, request_id, status_update):
@@ -104,6 +105,14 @@ def update_request_status(request_id):
         success = ManageRequestModel.update_request_status(request_id, new_status, admin_id, payment_status, payment_reference, payment_type)
         
         if success:
+            # Log the status change
+            payment_info = f"Payment: {payment_status}" if payment_status else ""
+            log_request_action(
+                action=f"status_changed_to_{new_status}",
+                request_id=request_id,
+                details=payment_info
+            )
+            
             if phone:
                 send_whatsapp_status_update(phone, full_name, request_id, new_status)
             
@@ -131,6 +140,12 @@ def delete_request(request_id):
 
         success = ManageRequestModel.delete_request(request_id, admin_id)
         if success:
+            # Log the request deletion
+            log_request_action(
+                action="request_deleted",
+                request_id=request_id,
+                details=f"Deleted by admin: {admin_id}"
+            )
             return jsonify({"message": "Request deleted successfully"}), 200
         else:
             return jsonify({"error": "Request not found or deletion failed"}), 404
@@ -192,6 +207,12 @@ def request_changes(request_id):
 
         success = ManageRequestModel.create_change_request(request_id, admin_id, wrong_requirements, remarks, file_link)
         if success:
+            # Log the change request
+            log_request_action(
+                action="change_request_created",
+                request_id=request_id,
+                details=f"Remarks: {remarks}, Wrong requirements: {len(wrong_requirements)}"
+            )
             return jsonify({"message": "Request changes submitted and request rejected successfully"}), 200
         else:
             return jsonify({"error": "Failed to submit request changes"}), 500
@@ -215,6 +236,13 @@ def auto_assign_requests():
         if assigned_count == 0:
             return jsonify({"error": "No requests could be assigned. All admins may be at capacity or no unassigned requests available."}), 400
 
+        # Log the auto-assign action
+        log_admin_action(
+            action="auto_assign_requests",
+            details=f"Assigned {assigned_count} requests using load balancing",
+            category="REQUEST_MANAGEMENT"
+        )
+
         return jsonify({"message": f"Successfully auto-assigned {assigned_count} requests using load balancing"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -235,6 +263,14 @@ def manual_assign_requests():
         for req_id in request_ids:
             if ManageRequestModel.assign_request_to_admin(req_id, admin_id, assigner_admin_id):
                 assigned_count += 1
+        
+        # Log the manual assign action
+        log_admin_action(
+            action="manual_assign_requests",
+            details=f"Manually assigned {assigned_count} requests to {admin_id}",
+            category="REQUEST_MANAGEMENT"
+        )
+        
         return jsonify({"message": f"Manually assigned {assigned_count} requests"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -442,6 +478,14 @@ def set_admin_max_requests(admin_id):
         data = request.get_json()
         max_requests = data.get("max", 10)
         ManageRequestModel.set_admin_max_requests(admin_id, max_requests)
+        
+        # Log the max requests update
+        log_admin_action(
+            action="set_admin_max_requests",
+            details=f"Set max requests to {max_requests} for admin {admin_id}",
+            category="USER_MANAGEMENT"
+        )
+        
         return jsonify({"message": "Admin max requests updated"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -462,6 +506,12 @@ def unassign_request():
 
         success = ManageRequestModel.unassign_request_from_admin(request_id, admin_id)
         if success:
+            # Log the unassign action
+            log_admin_action(
+                action="unassign_request",
+                details=f"Unassigned request {request_id} from admin {admin_id}",
+                category="REQUEST_MANAGEMENT"
+            )
             return jsonify({"message": "Request unassigned successfully"}), 200
         else:
             return jsonify({"error": "Request not found or not assigned to this admin"}), 404
@@ -514,6 +564,12 @@ def toggle_document_status(request_id, doc_id):
 
         success, result = ManageRequestModel.toggle_document_completion(request_id, doc_id, admin_id)
         if success:
+            # Log the document status toggle
+            log_document_action(
+                action="document_status_toggled",
+                document_id=doc_id,
+                details=f"Request: {request_id}, Status: {'Done' if result else 'Not Done'}"
+            )
             return jsonify({
                 "message": "Document status toggled successfully",
                 "is_done": result
@@ -536,6 +592,12 @@ def toggle_others_document_status(request_id, doc_id):
 
         success, result = ManageRequestModel.toggle_others_document_completion(request_id, doc_id, admin_id)
         if success:
+            # Log the others document status toggle
+            log_document_action(
+                action="others_document_status_toggled",
+                document_id=doc_id,
+                details=f"Request: {request_id}, Status: {'Done' if result else 'Not Done'}"
+            )
             return jsonify({
                 "message": "Others document status toggled successfully",
                 "is_done": result

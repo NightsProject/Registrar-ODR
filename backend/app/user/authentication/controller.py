@@ -8,6 +8,7 @@ from app.utils.decorator import jwt_required_with_role
 from werkzeug.utils import secure_filename
 from supabase import create_client, Client
 from config import SUPABASE_URL, SUPABASE_ANON_KEY 
+from app.services.logging_service import log_auth_event
 import random
 import hashlib
 
@@ -46,6 +47,13 @@ def check_id():
 
     # Student not found in records
     if not result["exists"]:
+        # Log failed attempt
+        log_auth_event(
+            event_type="student_not_found",
+            details=f"Student ID {student_id} not found in records",
+            success=False,
+            user_id=student_id
+        )
         return jsonify({
             "status": "not_found",
             "message": "Student ID not registered"
@@ -101,6 +109,12 @@ def check_name():
     result = AuthenticationUser.check_student_name_exists(firstname, lastname, skip_liability_check=is_outsider)
 
     if not result["exists"]:
+        # Log name mismatch
+        log_auth_event(
+            event_type="name_mismatch",
+            details=f"Name does not match records: {firstname} {lastname}",
+            success=False
+        )
         return jsonify({"status": "name_mismatch", "message": "Provided name does not match records."}), 400
 
     if requester_whatsapp_number:
@@ -145,6 +159,12 @@ def resend_otp():
     full_name = session.get("full_name", "Valued Customer")
 
     if not student_id or not phone:
+        # Log failed resend attempt
+        log_auth_event(
+            event_type="resend_otp_failed_no_session",
+            details="No active OTP session to resend",
+            success=False
+        )
         return jsonify({
             "status": "expired",
             "message": "No active OTP session. Please start again."
@@ -158,10 +178,24 @@ def resend_otp():
     whatsapp_result = send_whatsapp_otp(phone, full_name, otp)
     
     if whatsapp_result["status"] == "failed":
+        log_auth_event(
+            event_type="resend_otp_failed_whatsapp",
+            details=f"Failed to send OTP via WhatsApp for student_id: {student_id}",
+            success=False,
+            user_id=student_id
+        )
         return jsonify({
             "status": "error",
             "message": whatsapp_result["message"]
         }), 500
+    
+    # Log successful resend
+    log_auth_event(
+        event_type="resend_otp_success",
+        details=f"OTP resent successfully for student_id: {student_id}",
+        success=True,
+        user_id=student_id
+    )
     
     # Success response
     return jsonify({
@@ -195,6 +229,13 @@ def verify_otp():
     result = AuthenticationUser.verify_otp(otp, session)
 
     if not result["verified"]:
+        # Log failed login attempt
+        log_auth_event(
+            event_type="login_failed_invalid_otp",
+            details=f"Invalid OTP for student_id: {student_id}",
+            success=False,
+            user_id=student_id
+        )
         return jsonify({
             "valid": False,
             "message": "Invalid OTP"
@@ -225,6 +266,14 @@ def verify_otp():
         "has_liability": result["has_liability"] if not is_outsider else False
     })
     set_access_cookies(response, access_token)
+
+    # Log successful login
+    log_auth_event(
+        event_type="login_success",
+        details=f"User {student_id} logged in successfully",
+        success=True,
+        user_id=student_id
+    )
 
     current_app.logger.info(f"User {student_id} logged in successfully.")
     print("[SUCCESS] OTP verified, JWT token created")
@@ -286,9 +335,20 @@ def upload_auth_letter():
         # Store URL in DB
         success, message = AuthenticationUser.store_authletter(request_id, firstname, lastname, file_url, number, requester_name)
         status_code = 200 if success else 400
+        
+        # Log auth letter upload
+        if success:
+            log_document_action(
+                action="auth_letter_uploaded",
+                document_id=request_id or "new",
+                details=f"Uploaded by: {firstname} {lastname}, Requester: {requester_name}"
+            )
+        else:
+            log_error("upload_auth_letter", message, f"Request ID: {request_id}")
 
         return jsonify({"success": success, "notification": message, "file_url": file_url}), status_code
 
     except Exception as e:
         print(f"Error uploading auth letter: {e}")
+        log_error("upload_auth_letter", str(e), f"Request ID: {request_id}")
         return jsonify({"success": False, "notification": "Failed to upload authorization letter."}), 500

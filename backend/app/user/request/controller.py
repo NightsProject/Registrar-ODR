@@ -7,6 +7,7 @@ from flask_jwt_extended import get_jwt_identity, unset_jwt_cookies, jwt_required
 from .models import Request
 from app.user.document_list.models import DocumentList
 from app.admin.settings.models import Fee
+from app.services.logging_service import log_request_action, log_admin_action, log_error
 import os
 from werkzeug.utils import secure_filename
 from supabase import create_client, Client
@@ -43,6 +44,12 @@ def check_request_allowed():
     Check if requesting is allowed at the current time.
     If this function is reached, it means the decorator allowed it.
     """
+    # Log request allowed check
+    log_request_action(
+        action="request_allowed_checked",
+        request_id="N/A",
+        details="Request allowed check passed"
+    )
     return jsonify({"allowed": True}), 200
 
 
@@ -90,7 +97,7 @@ def get_public_request_status():
         }), 200
         
     except Exception as e:
-        print(f"Error in /api/public/request-status: {e}")
+        log_error("get_public_request_status", str(e))
 
         # Return default settings if there's an error
         try:
@@ -125,9 +132,10 @@ def get_request_page_data():
     Step 2: Get all available documents for request
     Step 3: Return JSON data to React
     """
+    student_id = session.get("student_id")
+    
     try:
         # step 1: Get student data from external DB
-        student_id = session.get("student_id")
         
         #Fetch student info
         student_data = Request.get_student_data(student_id)
@@ -145,6 +153,13 @@ def get_request_page_data():
         # Step 3: Get admin fee
         admin_fee = Fee.get_value('admin_fee')
 
+        # Log request page data retrieval
+        log_request_action(
+            action="request_page_accessed",
+            request_id="N/A",
+            details=f"Student ID: {student_id}, Documents available: {len(documents)}"
+        )
+
         # Step 3: send the needed data to React
         return jsonify({
             "status": "success",
@@ -160,6 +175,7 @@ def get_request_page_data():
         })
 
     except Exception as e:
+        log_error("get_request_page_data", str(e), f"Student ID: {student_id}")
         print(f"Error in /api/request: {e}")
         return jsonify({
             "status": "error",
@@ -173,6 +189,8 @@ def get_requirements():
     """
     Returns all unique requirements for selected documents.
     """
+    student_id = session.get("student_id")
+    
     try:
         data = request.get_json()
         document_ids = data.get("document_ids", [])
@@ -194,12 +212,20 @@ def get_requirements():
                 "requirements": []
             }), 200
 
+        # Log requirements retrieval
+        log_request_action(
+            action="requirements_listed",
+            request_id="N/A",
+            details=f"Student ID: {student_id}, Documents: {len(document_ids)}, Requirements: {len(result['requirements'])}"
+        )
+
         return jsonify({
             "success": True,
             "requirements": result["requirements"]
         }), 200
         
     except Exception as e:
+        log_error("get_requirements", str(e), f"Student ID: {student_id}")
         print(f"Error in /api/list-requirements: {e}")
         return jsonify({
             "success": False,
@@ -275,6 +301,13 @@ def complete_request():
         # Step 5: Send WhatsApp notification
         whatsapp_result = send_whatsapp_tracking(student_contact, student_name, request_id)
 
+        # Log successful request submission
+        log_request_action(
+            action="request_submitted",
+            request_id=request_id,
+            details=f"Student: {student_name}, Total: ₱{total_price}"
+        )
+
         return jsonify({
             "success": True,
             "request_id": request_id,
@@ -300,19 +333,25 @@ def check_active_requests():
     Check for active requests for the logged-in student.
     Returns all requests where status != 'RELEASED'.
     """
+    student_id = session.get("student_id")
+    
+    if not student_id:
+        log_error("check_active_requests", "Student ID not found in session")
+        return jsonify({
+            "status": "error",
+            "message": "Student ID not found in session"
+        }), 400
+
     try:
-        # Get student ID from session
-        student_id = session.get("student_id")
-        
-        if not student_id:
-
-            return jsonify({
-                "status": "error",
-                "message": "Student ID not found in session"
-            }), 400
-
         # Fetch active requests for the student
         active_requests = Request.get_active_requests_by_student(student_id)
+
+        # Log active requests check
+        log_request_action(
+            action="active_requests_checked",
+            request_id="N/A",
+            details=f"Student ID: {student_id}, Active requests: {len(active_requests)}"
+        )
 
         return jsonify({
             "status": "success",
@@ -321,6 +360,7 @@ def check_active_requests():
         }), 200
 
     except Exception as e:
+        log_error("check_active_requests", str(e), f"Student ID: {student_id}")
         return jsonify({
             "status": "error",
             "message": "An unexpected error occurred while fetching active requests."
@@ -333,6 +373,16 @@ def logout_user():
     """
     Clears user session and JWT cookies.
     """
+    student_id = session.get("student_id")
+    
+    # Log user logout
+    if student_id:
+        log_admin_action(
+            action="user_logout",
+            details=f"User {student_id} logged out",
+            category="AUTHENTICATION"
+        )
+    
     response = jsonify({"message": "Logout successful"})
 
     # Remove any JWT cookies set via set_access_cookies()

@@ -2,6 +2,7 @@ from . import document_management_bp
 from flask import jsonify, g, request
 from flask_jwt_extended import jwt_required
 from .models import DocumentManagementModel
+from app.services.logging_service import log_document_action, log_admin_action
 
 
 @document_management_bp.route('/api/get-documents', methods=['GET'])
@@ -52,6 +53,12 @@ def add_document():
         success, message, new_doc_id = DocumentManagementModel.add_document(data)
         
         if success:
+            # Log document creation
+            log_document_action(
+                action="document_created",
+                document_id=new_doc_id,
+                details=f"Document: {data.get('document_name', 'Unknown')}"
+            )
             return jsonify({"message": message, "doc_id": new_doc_id}), 201
         elif "Duplicate" in message or "already exists" in message.lower():
             return jsonify({"error": message}), 400
@@ -71,6 +78,12 @@ def edit_document(doc_id):
         success, error = DocumentManagementModel.edit_document(doc_id, data)
         
         if success:
+            # Log document update
+            log_document_action(
+                action="document_updated",
+                document_id=doc_id,
+                details=f"Updated fields: {', '.join(data.keys())}"
+            )
             return jsonify({"message": "Document updated successfully"}), 200
         else:
             return jsonify({"error": error}), 500
@@ -85,6 +98,12 @@ def delete_document(doc_id):
         success, error = DocumentManagementModel.delete_document(doc_id)
         
         if success:
+            # Log document deletion
+            log_document_action(
+                action="document_deleted",
+                document_id=doc_id,
+                details="Document deleted"
+            )
             return jsonify({"message": f"Document {doc_id} deleted successfully"}), 200
         else:
             return jsonify({"error": error}), 500
@@ -109,6 +128,12 @@ def delete_requirement(req_id):
         success, error = DocumentManagementModel.delete_requirement(req_id)
         
         if success:
+            # Log requirement deletion
+            log_admin_action(
+                action="requirement_deleted",
+                details=f"Requirement ID: {req_id}",
+                category="DOCUMENT_MANAGEMENT"
+            )
             return jsonify({"message": f"Requirement {req_id} deleted successfully"}), 200
         else:
             return jsonify({"error": error}), 500
@@ -125,6 +150,12 @@ def add_requirement():
         success, message, new_req_id = DocumentManagementModel.add_requirement(name)
         
         if success:
+            # Log requirement creation
+            log_admin_action(
+                action="requirement_created",
+                details=f"Requirement: {name}",
+                category="DOCUMENT_MANAGEMENT"
+            )
             return jsonify({"message": message, "req_id": new_req_id}), 201
         elif "cannot be empty" in message.lower() or "already exists" in message.lower():
             return jsonify({"error": message}), 400
@@ -194,6 +225,12 @@ def edit_requirement(req_id):
         success, error = DocumentManagementModel.edit_requirement(req_id, new_name)
         
         if success:
+            # Log requirement update
+            log_admin_action(
+                action="requirement_updated",
+                details=f"Requirement ID: {req_id}, New name: {new_name}",
+                category="DOCUMENT_MANAGEMENT"
+            )
             return jsonify({
                 "message": f"Requirement {req_id} updated successfully",
                 "req_id": req_id,
@@ -218,6 +255,12 @@ def hide_document(doc_id):
         success, error = DocumentManagementModel.hide_document(doc_id)
         
         if success:
+            # Log document hide
+            log_document_action(
+                action="document_hidden",
+                document_id=doc_id,
+                details="Document hidden"
+            )
             return jsonify({"message": f"Document {doc_id} hidden successfully"}), 200
         else:
             return jsonify({"error": error}), 500
@@ -232,6 +275,12 @@ def toggle_hide_document(doc_id):
         success, error = DocumentManagementModel.toggle_hide_document(doc_id)
         
         if success:
+            # Log document hide toggle
+            log_document_action(
+                action="document_hide_toggled",
+                document_id=doc_id,
+                details="Document hide status toggled"
+            )
             return jsonify({"message": f"Document {doc_id} hidden status toggled successfully"}), 200
         else:
             return jsonify({"error": error}), 500
