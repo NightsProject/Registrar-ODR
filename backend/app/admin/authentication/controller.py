@@ -7,7 +7,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from ..settings.models import Admin, DomainWhitelist
 import secrets
-from app.services.logging_service import log_admin_action, log_security_event, log_error, log_user_management
+from app.services.logging_service import log_admin_action, log_security_event, log_error, LoggingService
 
 # =========================
 # OAuth setup (will be initialized in create_app)
@@ -79,7 +79,7 @@ def google_oauth_callback():
 
         # Check if domain is allowed using whitelist
         if not DomainWhitelist.is_domain_allowed(hd):
-            log_user_management("auth_failed", email, f"Unauthorized domain: {hd}")
+            LoggingService.log_user_management("auth_failed", email, f"Unauthorized domain: {hd}")
             frontend_error_url = f"{FRONTEND_URL}/admin/login?error=unauthorized_domain"
             return redirect(frontend_error_url)
 
@@ -91,7 +91,7 @@ def google_oauth_callback():
             Admin.add(email, role, profile_picture)
             
             if role == "admin":
-                log_user_management("first_admin_created", email, f"First admin account automatically created")
+                LoggingService.log_user_management("first_admin_created", email, f"First admin account automatically created")
                 access_token = create_access_token(
                     identity=email,
                     additional_claims={"role": role}
@@ -159,7 +159,7 @@ def add_admin():
 
 
     if Admin.add(email, role):
-        log_user_management("admin_created", email, f"Admin {email} added with role {role}")
+        LoggingService.log_user_management("admin_created", email, f"Admin {email} added with role {role}")
         return jsonify({"message": "Admin added successfully"}), 201
     else:
         log_error("add_admin", f"Failed to add admin {email} with role {role}")
