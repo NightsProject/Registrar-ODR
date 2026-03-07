@@ -140,6 +140,21 @@ input:checked + .slider:before {
   font-size: 1rem;
 }
 
+/* Test Mode Notice */
+.test-mode-notice {
+  background-color: #fffbeb;
+  border: 1px solid #f6e05e;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.test-mode-notice p {
+  color: #744210;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
 /* Feedback List Styles */
 .feedback-list {
   display: flex;

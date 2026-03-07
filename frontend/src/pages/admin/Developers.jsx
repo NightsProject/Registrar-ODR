@@ -152,13 +152,10 @@ const Developers = () => {
 
   useEffect(() => {
     fetchTestMode();
+    // Always fetch feedback regardless of test mode status
+    fetchFeedback();
   }, []);
 
-  useEffect(() => {
-    if (testMode) {
-      fetchFeedback();
-    }
-  }, [testMode]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -220,13 +217,18 @@ const Developers = () => {
         </div>
       </div>
 
-      {/* Feedback Section - Only show when test mode is enabled */}
-      {testMode && (
-        <div className="developers-section">
-          <div className="section-header">
-            <h2>User Feedback</h2>
-            <p>View and manage feedback submitted by test users</p>
+      {/* Feedback Section - Always show, with notice when test mode is OFF */}
+      <div className="developers-section">
+        <div className="section-header">
+          <h2>User Feedback</h2>
+          <p>View and manage feedback submitted by test users</p>
+        </div>
+
+        {!testMode && (
+          <div className="test-mode-notice">
+            <p>⚠️ Test mode is currently <strong>OFF</strong>. New feedback submissions are not available, but you can view existing feedback below.</p>
           </div>
+        )}
 
           {loadingFeedback ? (
             <div className="loading-state">
@@ -289,7 +291,6 @@ const Developers = () => {
             </div>
           )}
         </div>
-      )}
     </div>
   );
 };

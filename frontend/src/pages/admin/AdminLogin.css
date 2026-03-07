@@ -1,0 +1,47 @@
+/* Floating Test Mode Button */
+.test-mode-floating-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  transition: all 0.3s ease;
+  z-index: 999;
+}
+
+.test-mode-floating-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+}
+
+.test-mode-floating-btn:active {
+  transform: scale(0.95);
+}
+
+.test-mode-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .test-mode-floating-btn {
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+  }
+  
+  .test-mode-icon {
+    font-size: 20px;
+  }
+}
+
