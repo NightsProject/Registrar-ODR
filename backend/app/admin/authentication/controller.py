@@ -1,5 +1,3 @@
-
-
 from . import authentication_admin_bp
 from flask import jsonify, request, current_app, redirect, url_for, session
 from flask_jwt_extended import create_access_token, set_access_cookies, jwt_required, get_jwt_identity
@@ -9,7 +7,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from ..settings.models import Admin, DomainWhitelist
 import secrets
-from app.services.logging_service import LoggingService
+from app.services.logging_service import log_admin_action, log_security_event, log_error, log_user_management
 
 # =========================
 # OAuth setup (will be initialized in create_app)
@@ -81,7 +79,7 @@ def google_oauth_callback():
 
         # Check if domain is allowed using whitelist
         if not DomainWhitelist.is_domain_allowed(hd):
-            LoggingService.log_user_management("auth_failed", email, f"Unauthorized domain: {hd}")
+            log_user_management("auth_failed", email, f"Unauthorized domain: {hd}")
             frontend_error_url = f"{FRONTEND_URL}/admin/login?error=unauthorized_domain"
             return redirect(frontend_error_url)
 
@@ -93,7 +91,7 @@ def google_oauth_callback():
             Admin.add(email, role, profile_picture)
             
             if role == "admin":
-                LoggingService.log_user_management("first_admin_created", email, f"First admin account automatically created")
+                log_user_management("first_admin_created", email, f"First admin account automatically created")
                 access_token = create_access_token(
                     identity=email,
                     additional_claims={"role": role}
@@ -129,10 +127,17 @@ def get_admins():
     """Get all admins."""
     try:
         admins = Admin.get_all()
+        
+        # Log admin list access
+        log_admin_action(
+            action="admins_list_accessed",
+            details=f"Admin list retrieved by {get_jwt_identity()}",
+            category="USER_MANAGEMENT"
+        )
         return jsonify(admins), 200
 
     except Exception as e:
-        LoggingService.log_error("get_admins", f"Error fetching admins: {str(e)}")
+        log_error("get_admins", f"Error fetching admins: {str(e)}")
         return jsonify({"error": "Failed to fetch admins"}), 500
 
 
@@ -145,14 +150,19 @@ def add_admin():
     role = data.get("role")
 
     if not email or not role:
+        log_security_event(
+            event_type="add_admin_invalid_input",
+            details=f"Missing email or role - email: {bool(email)}, role: {bool(role)}",
+            severity="WARNING"
+        )
         return jsonify({"error": "Email and role are required"}), 400
 
 
     if Admin.add(email, role):
-        LoggingService.log_user_management("admin_created", email, f"Admin {email} added with role {role}")
+        log_user_management("admin_created", email, f"Admin {email} added with role {role}")
         return jsonify({"message": "Admin added successfully"}), 201
     else:
-        LoggingService.log_error("add_admin", f"Failed to add admin {email} with role {role}")
+        log_error("add_admin", f"Failed to add admin {email} with role {role}")
         return jsonify({"error": "Failed to add admin"}), 500
 
 
@@ -164,12 +174,24 @@ def update_admin(email):
     role = data.get("role")
 
     if not role:
+        log_security_event(
+            event_type="update_admin_invalid_input",
+            details=f"Missing role for admin: {email}",
+            severity="WARNING"
+        )
         return jsonify({"error": "Role is required"}), 400
 
     if Admin.update(email, role):
+        # Log admin role update
+        log_admin_action(
+            action="admin_role_updated",
+            details=f"Admin {email} role changed to {role}",
+            category="USER_MANAGEMENT"
+        )
         current_app.logger.info(f"Admin {email} role updated to {role}")
         return jsonify({"message": "Admin updated successfully"}), 200
     else:
+        log_error("update_admin", f"Failed to update admin {email}")
         return jsonify({"error": "Admin not found"}), 404
 
 
@@ -179,9 +201,16 @@ def update_admin(email):
 def delete_admin(email):
     """Delete an admin."""
     if Admin.delete(email):
+        # Log admin deletion
+        log_admin_action(
+            action="admin_deleted",
+            details=f"Admin {email} deleted",
+            category="USER_MANAGEMENT"
+        )
         current_app.logger.info(f"Admin {email} deleted")
         return jsonify({"message": "Admin deleted successfully"}), 200
     else:
+        log_error("delete_admin", f"Failed to delete admin {email}")
         return jsonify({"error": "Admin not found"}), 404
 
 
@@ -212,10 +241,20 @@ def get_current_user():
 def logout():
     """Logout current user."""
     try:
+        # Get admin identity before clearing
+        admin_id = get_jwt_identity()
+        
         # Create response
         response = jsonify({"message": "Logout successful"})
         # Clear the JWT cookie
         set_access_cookies(response, "", max_age=0)
+
+        # Log the logout
+        log_admin_action(
+            action="admin_logout",
+            details=f"Admin {admin_id} logged out",
+            category="AUTHENTICATION"
+        )
 
         return response, 200
     except Exception as e:

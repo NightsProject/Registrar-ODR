@@ -1,9 +1,9 @@
-
 from . import developers_bp
 from flask import jsonify, request, current_app
 from flask_jwt_extended import jwt_required
 from app.utils.decorator import jwt_required_with_role
 from .models import TestModeSettings, Feedback, TestRegistration
+from app.services.logging_service import log_system_event, log_admin_action
 import re
 
 
@@ -31,6 +31,12 @@ def update_test_mode():
     
     try:
         if TestModeSettings.update_test_mode(bool(test_mode)):
+            # Log test mode update
+            log_system_event(
+                event_type="test_mode_updated",
+                details=f"Test mode set to: {test_mode}",
+                log_level="INFO"
+            )
             current_app.logger.info(f"Test mode updated to {test_mode}")
             return jsonify({"message": "Test mode updated successfully"}), 200
         else:
@@ -105,6 +111,12 @@ def update_feedback_status(feedback_id):
     
     try:
         if Feedback.update_status(feedback_id, status):
+            # Log feedback status update
+            log_admin_action(
+                action="feedback_status_updated",
+                details=f"Feedback ID: {feedback_id}, Status changed to: {status}",
+                category="ADMINISTRATION"
+            )
             current_app.logger.info(f"Feedback {feedback_id} status updated to {status}")
             return jsonify({"message": "Feedback status updated successfully"}), 200
         else:
@@ -121,6 +133,12 @@ def delete_feedback(feedback_id):
     """Delete feedback entry."""
     try:
         if Feedback.delete(feedback_id):
+            # Log feedback deletion
+            log_admin_action(
+                action="feedback_deleted",
+                details=f"Feedback ID: {feedback_id}",
+                category="ADMINISTRATION"
+            )
             current_app.logger.info(f"Feedback {feedback_id} deleted")
             return jsonify({"message": "Feedback deleted successfully"}), 200
         else:
