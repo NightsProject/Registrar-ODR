@@ -1,6 +1,6 @@
 from . import authentication_admin_bp
 from flask import jsonify, request, current_app, redirect, url_for, session
-from flask_jwt_extended import create_access_token, set_access_cookies, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, set_access_cookies, jwt_required, get_jwt_identity, unset_jwt_cookies
 from authlib.integrations.flask_client import OAuth
 from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FRONTEND_URL
 from google.oauth2 import id_token
@@ -281,26 +281,21 @@ def get_current_user():
 
 @authentication_admin_bp.route("/api/admin/logout", methods=["POST"])
 @jwt_required()
-def logout():
-    """Logout current user."""
-    try:
-        # Get admin identity before clearing
-        admin_id = get_jwt_identity()
-        
-        # Create response
-        response = jsonify({"message": "Logout successful"})
-        # Clear the JWT cookie
-        set_access_cookies(response, "", max_age=0)
+def admin_logout():
+   """
+   Logout admin by clearing JWT cookies.
+   """
+   admin_id = get_jwt_identity()
+   
+   # Log the logout action
+   log_admin_action(
+       action="admin_logout",
+       details=f"Admin {admin_id} logged out",
+       category="AUTHENTICATION"
+   )
+   
+   response = jsonify({"message": "Logged out successfully"})
+   unset_jwt_cookies(response)  # clears JWT + CSRF cookies
+   return response, 200
 
-        # Log the logout
-        log_admin_action(
-            action="admin_logout",
-            details=f"Admin {admin_id} logged out",
-            category="AUTHENTICATION"
-        )
-
-        return response, 200
-    except Exception as e:
-        current_app.logger.error(f"Error during logout: {e}")
-        return jsonify({"error": "Logout failed"}), 500
 

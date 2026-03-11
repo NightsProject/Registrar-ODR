@@ -35,22 +35,3 @@ def admin_dashboard():
    except Exception as e:
        log_error("admin_dashboard", str(e), f"Admin: {admin_id}")
        return jsonify({"error": str(e)}), 500
-
-@dashboard_bp.route("/api/admin/logout", methods=["POST"])
-@jwt_required()
-def admin_logout():
-   """
-   Logout admin by clearing JWT cookies.
-   """
-   admin_id = get_jwt_identity()
-   
-   # Log the logout action
-   log_admin_action(
-       action="admin_logout",
-       details=f"Admin {admin_id} logged out",
-       category="AUTHENTICATION"
-   )
-   
-   response = jsonify({"message": "Logged out successfully"})
-   unset_jwt_cookies(response)  # clears JWT + CSRF cookies
-   return response, 200
