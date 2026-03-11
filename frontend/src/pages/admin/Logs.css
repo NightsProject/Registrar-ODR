@@ -74,41 +74,6 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Export Controls */
-.logs-export-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.logs-export-btn {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    width: 100px; 
-    height: 32px;
-    padding: 0 10px;
-    transition: border-color 0.2s;
-    background-color: var(--color-secondary);
-    color: var(--color-white, white);
-    font-weight: 500;
-    position: relative;
-    cursor: pointer;
-}
-
-.logs-export-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.logs-export-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
 /* Results Summary */
 .logs-results-summary {
     display: flex;

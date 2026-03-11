@@ -9,7 +9,7 @@ import PaidIcon from "../../../components/icons/PaidIcon";
 import SearchIcon from "../../../components/icons/SearchIcon";
 import CalendarIcon from "../../../components/icons/CalendarIcon";
 import SortIcon from "../../../components/icons/SortIcon";
-import DownloadIcon from "../../../components/icons/DownloadIcon";
+import ExportSelector from "../../../components/common/ExportSelector";
 
 const SummaryCard = ({ title, icon: Icon, value, subText, trend }) => (
   <div className="summary-card">
@@ -50,7 +50,6 @@ function Transactions() {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [showLimitMenu, setShowLimitMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
   const totalAdminFee = transactions.reduce((total, t) => total + (t.admin_fee || 0), 0);
   const toISODate = (date) => {
     const year = date.getFullYear();
@@ -374,28 +373,12 @@ function Transactions() {
             )}
           </div>
 
-          <div 
-            className="export-select-wrapper" 
-            onClick={() => setShowExportMenu(!showExportMenu)}
-            tabIndex={0}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) {
-                setShowExportMenu(false);
-              }
-            }}
-          >
-            <DownloadIcon className="export-icon" width="16" height="16" />
-            <span className="export-select-text">Export</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`export-select-arrow ${showExportMenu ? 'rotate' : ''}`}>
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-            {showExportMenu && (
-              <div className="export-dropdown-menu">
-                <div className="export-option" onClick={downloadCSV}>CSV</div>
-                <div className="export-option" onClick={downloadPDF}>PDF</div>
-              </div>
-            )}
-          </div>
+          <ExportSelector 
+            actions={[
+              { label: 'CSV', onClick: downloadCSV },
+              { label: 'PDF', onClick: downloadPDF }
+            ]} 
+          />
         </div>
       </div>
 
