@@ -1,20 +1,35 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { normalizeRole, hasPermission as checkPermission, canAccessRoute as checkRouteAccess, getFilteredNavigationItems as checkFilteredItems } from '../utils/roleUtils';
 import { getCSRFToken } from '../utils/csrf';
 
 const AuthContext = createContext();
 
+const EMPTY_PERMISSIONS = {
+  dashboard:            false,
+  requests:             false,
+  transactions:         false,
+  documents:            false,
+  logs:                 false,
+  settings:             false,
+  developers:           false,
+  view_request_details: false,
+};
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user,                     setUser]                     = useState(null);
+  const [role,                     setRole]                     = useState(null);
+  const [permissions,              setPermissions]              = useState(EMPTY_PERMISSIONS);
+  const [navigation,               setNavigation]               = useState([]);
+  const [isLoading,                setIsLoading]                = useState(true);
+  const [isAuthenticated,          setIsAuthenticated]          = useState(false);
   const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
 
+  // ------------------------------------------------------------------
+  // Fetch the current user from the server.
+  // The response now includes permissions + navigation from the server.
+  // ------------------------------------------------------------------
   const fetchCurrentUser = async () => {
     try {
-      // Don't set isLoading(true) here if it's already true from initialization
-      // to avoid unnecessary re-renders
       const response = await fetch('/api/admin/current-user', {
         method: 'GET',
         credentials: 'include',
@@ -26,44 +41,37 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const userData = await response.json();
-        setUser(userData);
-        setRole(normalizeRole(userData.role));
+
+        setUser({ email: userData.email, role: userData.role });
+        setRole(userData.role);
+        setPermissions(userData.permissions ?? EMPTY_PERMISSIONS);
+        setNavigation(userData.navigation ?? []);
         setIsAuthenticated(true);
         return true;
       } else {
-        setUser(null);
-        setRole(null);
-        setIsAuthenticated(false);
+        _clearAuth();
         return false;
       }
     } catch (error) {
       console.error('Error fetching current user:', error);
-      setIsAuthenticated(false);
+      _clearAuth();
       return false;
     } finally {
       setIsLoading(false);
     }
   };
-  /**
-   * Update user role
-   * @param {string} newRole - New role to set
-   */
-  const updateRole = (newRole) => {
-    const normalizedRole = normalizeRole(newRole);
-    setRole(normalizedRole);
-    
-    if (user) {
-      setUser({
-        ...user,
-        role: normalizedRole,
-      });
-    }
+
+  const _clearAuth = () => {
+    setUser(null);
+    setRole(null);
+    setPermissions(EMPTY_PERMISSIONS);
+    setNavigation([]);
+    setIsAuthenticated(false);
   };
 
-
-  /**
-   * Logout user
-   */
+  // ------------------------------------------------------------------
+  // Logout
+  // ------------------------------------------------------------------
   const logout = async () => {
     try {
       await fetch('/api/admin/logout', {
@@ -77,76 +85,77 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear local state regardless of API call success
-      setUser(null);
-      setRole(null);
-      setIsAuthenticated(false);
+      _clearAuth();
     }
   };
 
+  // ------------------------------------------------------------------
+  // Permission helpers — read from the server-supplied permissions object.
+  // ------------------------------------------------------------------
 
-
-  /**
-   * Check if user has specific permission
-   * @param {string} permission - Permission to check
-   * @returns {boolean} - True if user has permission
-   */
-  const hasPermission = (permission) => {
-    return checkPermission(role, permission);
+  /** Returns true if the server said the current user can access this feature. */
+  const hasPermission = (feature) => {
+    return permissions[feature] ?? false;
   };
 
-
   /**
-   * Check if user can access specific route
-   * @param {string} path - Route path to check
-   * @returns {boolean} - True if user can access route
+   * Returns true if the current path corresponds to a feature the user
+   * has permission for.  Unknown paths are allowed through (sub-pages, etc.).
    */
   const canAccessRoute = (path) => {
-    return checkRouteAccess(role, path);
+    const match = navigation.find(item => {
+      // Normalise both sides: lowercase, strip trailing slash
+      const itemPath = item.path.toLowerCase().replace(/\/$/, '');
+      const checkPath = path.toLowerCase().replace(/\/$/, '');
+      return checkPath === itemPath || checkPath.startsWith(itemPath + '/');
+    });
+
+    // If the path isn't a top-level nav route, allow it (detail pages, etc.)
+    if (!match) return true;
+
+    return permissions[match.key] ?? false;
   };
 
-
+  /** Returns the server-filtered navigation array (already permission-gated). */
+  const getFilteredNavigationItems = () => navigation;
 
   /**
-   * Get filtered navigation items based on user role
-   * @returns {Array} - Filtered navigation items
+   * Returns the first accessible path for the current user, based on the
+   * server-supplied navigation list.  Falls back to /admin/waiting if the
+   * navigation list is empty (role = "none" or not yet loaded).
    */
-  const getFilteredNavigationItems = () => {
-    if (!role) return [];
-    
-    // Use the centralized function from roleUtils
-    return checkFilteredItems(role);
-  };
+  const getDefaultPath = () => navigation[0]?.path ?? '/admin/waiting';
 
-  // Initialize authentication state on component mount
+  // ------------------------------------------------------------------
+  // Initialise on mount
+  // ------------------------------------------------------------------
   useEffect(() => {
-    const initAuth = async () => {
-      // Always attempt to fetch the user on mount.
-      // The browser will automatically send the HttpOnly cookie.
+    const init = async () => {
       await fetchCurrentUser();
       setInitialAuthCheckComplete(true);
     };
-    
-    initAuth();
+    init();
   }, []);
 
   const contextValue = {
     // State
     user,
     role,
+    permissions,
+    navigation,
     isLoading,
     isAuthenticated,
     initialAuthCheckComplete,
-    
+
     // Actions
-    updateRole,
     logout,
     refreshUser: fetchCurrentUser,
-    
-    // Permission checks
+
+    // Permission helpers
     hasPermission,
     canAccessRoute,
     getFilteredNavigationItems,
+    getDefaultPath,
   };
 
   return (
@@ -156,10 +165,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-/**
- * Custom hook to use authentication context
- * @returns {Object} - Authentication context value
- */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
