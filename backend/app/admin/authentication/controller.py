@@ -8,6 +8,19 @@ from google.auth.transport import requests as google_requests
 from ..settings.models import Admin, DomainWhitelist
 import secrets
 from app.services.logging_service import log_admin_action, log_security_event, log_error, LoggingService
+from app.utils.permissions import get_permissions, normalize_role
+
+NAVIGATION_ITEMS = [
+    {"key": "dashboard",     "name": "Dashboard",    "path": "/admin/Dashboard",    "icon": "DashboardIcon"},
+    {"key": "requests",      "name": "Requests",     "path": "/admin/Requests",     "icon": "RequestsIcon"},
+    {"key": "transactions",  "name": "Transactions", "path": "/admin/Transactions", "icon": "PaidIcon"},
+    {"key": "documents",     "name": "Documents",    "path": "/admin/Documents",    "icon": "DocumentsIcon"},
+    {"key": "logs",          "name": "Logs",         "path": "/admin/Logs",         "icon": "LogsIcon"},
+    {"key": "settings",      "name": "Settings",     "path": "/admin/Settings",     "icon": "SettingsIcon"},
+    {"key": "developers",    "name": "Developers",   "path": "/admin/Developers",   "icon": "CodeIcon"},
+]
+
+
 
 # =========================
 # OAuth setup (will be initialized in create_app)
@@ -218,23 +231,53 @@ def delete_admin(email):
 @authentication_admin_bp.route("/api/admin/current-user", methods=["GET"])
 @jwt_required()
 def get_current_user():
-    """Get current authenticated user information."""
+    """
+    Return the authenticated admin's profile together with their
+    server-computed permissions and filtered navigation list.
+
+    Response shape:
+    {
+        "email": "john@example.com",
+        "role": "manager",
+        "permissions": {
+            "dashboard": true,
+            "requests": true,
+            "transactions": false,
+            ...
+        },
+        "navigation": [
+            {"key": "dashboard", "name": "Dashboard", "path": "/admin/Dashboard", "icon": "DashboardIcon"},
+            ...  // only items the role can access
+        ]
+    }
+    """
     try:
         current_email = get_jwt_identity()
         admin = Admin.get_by_email(current_email)
-        
 
-        if admin:
-            return jsonify({
-                "email": admin['email'],
-                "role": admin['role']
-            }), 200
-        else:
+        if not admin:
             return jsonify({"error": "User not found"}), 404
+
+        role = normalize_role(admin["role"])
+        permissions = get_permissions(role)
+
+        # Build the filtered navigation list using the server's permission matrix.
+        # The frontend no longer filters this itself.
+        allowed_nav = [
+            item for item in NAVIGATION_ITEMS
+            if permissions.get(item["key"], False)
+        ]
+
+        return jsonify({
+            "email":       admin["email"],
+            "role":        role,
+            "permissions": permissions,
+            "navigation":  allowed_nav,
+        }), 200
+
     except Exception as e:
         current_app.logger.error(f"Error fetching current user: {e}")
         return jsonify({"error": "Failed to fetch user information"}), 500
-
 
 @authentication_admin_bp.route("/api/admin/logout", methods=["POST"])
 @jwt_required()

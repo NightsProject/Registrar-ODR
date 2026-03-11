@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminWaiting from "./pages/admin/AdminWaiting";
-import Index from "./pages/Index";
 import Landing from "./pages/user/Landing";
 import UserMasterLayout from "./pages/layouts/UserMasterLayout";
 import LoginFlow from "./pages/user/login/LoginFlow";
@@ -84,7 +83,7 @@ function App() {
             } />
             
             {/* Documents - Accessible to manager, admin, staff */}
-            <Route path="Document" element={
+            <Route path="Documents" element={
               <ProtectedRoute requiredPermissions={['documents']}>
                 <Documents />
               </ProtectedRoute>

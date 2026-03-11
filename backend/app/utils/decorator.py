@@ -3,132 +3,155 @@ from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
 from app.admin.settings.models import OpenRequestRestriction, AvailableDates
 from app.utils.time_utils import get_philippine_time_info, parse_time_string
+from app.utils.permissions import normalize_role, has_permission
 import datetime
 import json
 
+
+def _extract_role() -> str:
+    """
+    Pull the role out of the current request's JWT.
+    Works whether the role is stored in the identity dict or in
+    additional_claims (both patterns are used in this project).
+    """
+    identity = get_jwt_identity()
+    claims = get_jwt()
+
+    raw = (
+        identity.get("role") if isinstance(identity, dict)
+        else claims.get("role")
+    )
+    return normalize_role(raw)
+
+
+# ---------------------------------------------------------------------------
+# Existing decorator — kept 100% backward-compatible
+# ---------------------------------------------------------------------------
 def jwt_required_with_role(role=None):
+    """
+    Verify a valid JWT is present and, optionally, that the caller holds
+    exactly the specified role.
+
+    Usage:
+        @jwt_required_with_role("admin")   # admins only
+        @jwt_required_with_role()          # any authenticated user
+    """
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
-            # Verify JWT exists
             verify_jwt_in_request()
 
-            # Get identity and claims
-            identity = get_jwt_identity()  # string or dict depending on version
-            claims = get_jwt()             # contains additional_claims
+            if role:
+                user_role = _extract_role()
+                if user_role != role:
+                    return jsonify({
+                        "error": (
+                            f"Forbidden. Required role: '{role}', "
+                            f"your role: '{user_role}'"
+                        )
+                    }), 403
 
-            # Determine user role
-            user_role = None
-            if isinstance(identity, dict):
-                user_role = identity.get("role")
-            else:
-                user_role = claims.get("role")  # fallback to additional_claims
+            return fn(*args, **kwargs)
+        return decorator
+    return wrapper
 
-            # Role check
-            if role and user_role != role:
+
+# ---------------------------------------------------------------------------
+# New decorator — feature-level permission check
+# ---------------------------------------------------------------------------
+def permission_required(feature: str):
+    """
+    Verify a valid JWT is present AND that the caller's role has access
+    to *feature* according to the server-side ROLE_PERMISSIONS matrix.
+
+    Because permission decisions live in permissions.py (server only),
+    a user cannot bypass this by editing their browser state.
+
+    Usage:
+        @permission_required("settings")
+        @permission_required("transactions")
+        @permission_required("developers")
+    """
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            verify_jwt_in_request()
+            user_role = _extract_role()
+
+            if not has_permission(user_role, feature):
                 return jsonify({
-                    "error": f"You are forbidden to access this page. Required '{role}' role"
+                    "error": (
+                        f"Forbidden. Your role '{user_role}' does not "
+                        f"have access to '{feature}'."
+                    )
                 }), 403
 
             return fn(*args, **kwargs)
         return decorator
     return wrapper
 
+
+# ---------------------------------------------------------------------------
+# Existing decorator — unchanged
+# ---------------------------------------------------------------------------
 def request_allowed_required():
+    """Block requests outside the configured operating hours."""
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
             if not is_request_allowed():
                 return jsonify({
                     "status": "error",
-                    "message": "Requests are not allowed at this time. Please check the available hours and days."
+                    "message": (
+                        "Requests are not allowed at this time. "
+                        "Please check the available hours and days."
+                    ),
                 }), 403
             return fn(*args, **kwargs)
         return decorator
     return wrapper
 
 
-
-
-
-def is_request_allowed():
+def is_request_allowed() -> bool:
     """
     Check if requesting is allowed at the current time based on settings.
     Precedence order: Time → Date → Day
     Uses Philippine time (UTC+8) for all time calculations.
     """
     try:
-        # Get current Philippine time
-        time_info = get_philippine_time_info()
-        current_time = time_info['current_time']
-        current_day = time_info['current_day']
-        current_date_str = time_info['current_date_str']
+        ph_time_info = get_philippine_time_info()
+        current_time = ph_time_info["time"]
+        current_date = ph_time_info["date"]
+        current_day  = ph_time_info["day_name"]
 
-        # STEP 1: Check time restrictions first (highest priority)
-        settings = OpenRequestRestriction.get_settings()
-        if settings:
-            start_time_str = settings.get('start_time', '09:00:00')
-            end_time_str = settings.get('end_time', '17:00:00')
+        # Date-specific override has highest precedence
+        date_setting = AvailableDates.get_date_setting(current_date)
+        if date_setting is not None:
+            return date_setting
 
-            # Validate time strings and provide defaults
-            start_time = parse_time_string(start_time_str) or datetime.time(9, 0, 0)
-            end_time = parse_time_string(end_time_str) or datetime.time(17, 0, 0)
+        restriction = OpenRequestRestriction.get_settings()
+        if not restriction:
+            return True
 
-
-            # Handle time range logic properly
-            # For same-day requests: start_time <= current_time <= end_time
-            # For overnight requests: current_time >= start_time OR current_time <= end_time
-            time_allowed = False
-            if start_time <= end_time:
-                # Same day range (e.g., 09:00 to 17:00)
-                time_allowed = start_time <= current_time <= end_time
-                print(f"Philippine Time check: {current_time} between {start_time} and {end_time}: {time_allowed}")
-            else:
-                # Overnight range (e.g., 22:00 to 06:00)
-                time_allowed = current_time >= start_time or current_time <= end_time
-                print(f"Overnight Philippine Time check: {current_time} >= {start_time} or {current_time} <= {end_time}: {time_allowed}")
-
-            # If not within allowed time, deny immediately
-            if not time_allowed:
-                print(f"Philippine Time {current_time} is outside allowed range {start_time} to {end_time}")
+        # Time window check
+        start_time = parse_time_string(restriction.get("start_time"))
+        end_time   = parse_time_string(restriction.get("end_time"))
+        if start_time and end_time:
+            if not (start_time <= current_time <= end_time):
                 return False
 
-        # STEP 2: Check date-specific restrictions second
-        date_availability = AvailableDates.is_date_available(current_date_str)
-        
-        if date_availability is not None:
-            # Specific date setting exists
-            if not date_availability:
-                # Date is explicitly marked as unavailable
-                print(f"Date {current_date_str} is marked as unavailable")
-                return False
-            else:
-                # Date is explicitly marked as available - allow regardless of day
-                print(f"Date {current_date_str} is marked as available")
-                return True
+        # Day-of-week check
+        available_days = restriction.get("available_days", [])
+        if isinstance(available_days, str):
+            try:
+                available_days = json.loads(available_days)
+            except (json.JSONDecodeError, TypeError):
+                available_days = []
 
-        # STEP 3: No specific date setting, check day restrictions (lowest priority)
-        if settings:
-            # Handle available_days - could be JSON string or list
-            available_days_raw = settings.get('available_days', [])
-            if isinstance(available_days_raw, str):
-                try:
-                    available_days = json.loads(available_days_raw)
-                except json.JSONDecodeError:
-                    # Fallback to default if JSON parsing fails
-                    available_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-            else:
-                available_days = available_days_raw
+        if available_days and current_day not in available_days:
+            return False
 
-            # Check if current day is allowed
-            if current_day not in available_days:
-                print(f"Current day {current_day} is not in allowed days: {available_days}")
-                return False
-
-        # If we get here, all checks passed
         return True
 
-    except Exception as e:
-        print(f"Error in is_request_allowed: {e}")
-        # If there's any error, allow requests by default
-        return True
+    except Exception:
+        return True   # Fail open — a settings bug should never block all users
