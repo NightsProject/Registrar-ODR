@@ -26,8 +26,6 @@ def send_whatsapp_otp(phone, full_name, otp_code):
         }
     ]
     
-    print(f"[OTP Verification] Attempting to send WhatsApp OTP {otp_code} to {phone}")
-    
     result = send_whatsapp_message(phone, template_name, components)
     
     if "error" in result:

@@ -26,8 +26,6 @@ def send_whatsapp_payment_confirmation(phone, full_name, request_id):
         }
     ]
 
-    print(f"[Payment Successful] Sending payment confirmation to {phone} for request {request_id}")
-
     result = send_whatsapp_message(phone, template_name, components)
 
     if "error" in result:
