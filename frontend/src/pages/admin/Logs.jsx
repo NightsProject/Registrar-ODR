@@ -31,6 +31,7 @@ function Logs() {
     const [currentPage, setCurrentPage] = useState(cachedData?.page || 1);
     const [perPage] = useState(50);
     const [totalPages, setTotalPages] = useState(cachedData?.total_pages || 1);
+    const [showExportMenu, setShowExportMenu] = useState(false);
     
     // Filter and search state
     const [searchText, setSearchText] = useState('');
@@ -301,22 +302,28 @@ function Logs() {
                         >
                             Filters
                         </button>
-                        <button
-                            onClick={() => exportLogs('json')}
-                            disabled={isExporting}
-                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center gap-2"
+                        <div 
+                            className="export-select-wrapper" 
+                            onClick={() => setShowExportMenu(!showExportMenu)}
+                            tabIndex={0}
+                            onBlur={(e) => {
+                            if (!e.currentTarget.contains(e.relatedTarget)) {
+                                setShowExportMenu(false);
+                            }
+                            }}
                         >
-                            <DownloadIcon className="w-4 h-4" />
-                            Export JSON
-                        </button>
-                        <button
-                            onClick={() => exportLogs('csv')}
-                            disabled={isExporting}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-                        >
-                            <DownloadIcon className="w-4 h-4" />
-                            Export CSV
-                        </button>
+                            <DownloadIcon className="export-icon" width="16" height="16" />
+                            <span className="export-select-text">Export</span>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`export-select-arrow ${showExportMenu ? 'rotate' : ''}`}>
+                            <path d="M6 9l6 6 6-6" />
+                            </svg>
+                            {showExportMenu && (
+                            <div className="export-dropdown-menu">
+                                <div className="export-option" onClick={() => exportLogs('csv')}>CSV</div>
+                                <div className="export-option" onClick={() => exportLogs('json')}>JSON</div>
+                            </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

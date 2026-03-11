@@ -84,13 +84,17 @@
 .logs-export-btn {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
+    justify-content: space-between;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100px; 
+    height: 32px;
+    padding: 0 10px;
+    transition: border-color 0.2s;
+    background-color: var(--color-secondary);
+    color: var(--color-white, white);
     font-weight: 500;
-    transition: all 0.2s ease;
-    border: none;
+    position: relative;
     cursor: pointer;
 }
 
