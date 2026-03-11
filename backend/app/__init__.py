@@ -145,15 +145,32 @@ def create_app(test_config=None):
     @app.route("/<path:path>")
     def serve_react(path):
 
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
+        def is_safe_path(base_dir, target_path):
+            base_dir_abs = os.path.abspath(base_dir)
+            target_abs = os.path.abspath(target_path)
+            try:
+                common = os.path.commonpath([base_dir_abs, target_abs])
+            except ValueError:
+                # Different drives on Windows or invalid paths
+                return False
+            return common == base_dir_abs
+
+        # Serve files from the static folder if the resolved path is within it
+        if path:
+            static_root = os.path.abspath(app.static_folder)
+            static_candidate = os.path.normpath(os.path.join(static_root, path))
+            if is_safe_path(static_root, static_candidate) and os.path.exists(static_candidate):
+                return send_from_directory(static_root, os.path.relpath(static_candidate, static_root))
         
         # Serve root files (favicon, manifest, etc.) from template folder (build root)
         abs_template_folder = os.path.join(app.root_path, app.template_folder)
-        if path and os.path.exists(os.path.join(abs_template_folder, path)):
-            return send_from_directory(abs_template_folder, path)
-            
-        return send_from_directory(abs_template_folder, "index.html")
+        template_root = os.path.abspath(abs_template_folder)
+        if path:
+            template_candidate = os.path.normpath(os.path.join(template_root, path))
+            if is_safe_path(template_root, template_candidate) and os.path.exists(template_candidate):
+                return send_from_directory(template_root, os.path.relpath(template_candidate, template_root))
+
+        return send_from_directory(template_root, "index.html")
 
     from .admin.authentication.controller import init_oauth
     init_oauth(app)
